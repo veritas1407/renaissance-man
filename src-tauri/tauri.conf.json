@@ -1,0 +1,35 @@
+{
+  "productName": "Renaissance Man",
+  "version": "0.1.0",
+  "identifier": "com.renaissance-man.app",
+  "build": {
+    "frontendDist": "../frontend"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Renaissance Man",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  },
+  "plugins": {
+    "dialog": {},
+    "fs": {
+      "all": true
+    }
+  }
+}

@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renaissance Man · the illuminated codex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Pirata+One&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --vellum:#e7d9b8;
+    --vellum-lit:#efe3c6;
+    --vellum-deep:#d9c79f;
+    --panel:#ece0c2;
+    --ink:#33271a;
+    --ink-2:#5e4d36;
+    --ink-3:#937c58;
+    --rule:rgba(51,39,26,0.16);
+    --rule-2:rgba(51,39,26,0.30);
+    --gold:#a9842f;
+    --gold-hi:#d9b65a;
+    --gold-deep:#7c5e1c;
+    --verm:#9e3320;       /* rubrication red */
+    --verm-2:#7d2716;
+    --night:#141b2b;
+    --serif:"IM Fell English",Georgia,serif;
+    --sc:"IM Fell English SC","IM Fell English",serif;
+    --disp:"Cormorant Garamond",Georgia,serif;
+    --black:"Pirata One",serif;
+    --ease:cubic-bezier(.2,.6,.32,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--vellum);
+    color:var(--ink);
+    font-family:var(--serif);
+    font-size:18px;line-height:1.7;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* parchment grain + candlelit vignette — the material signature */
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;mix-blend-mode:multiply;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgba(217,182,90,0.16), rgba(217,182,90,0) 55%),
+      radial-gradient(140% 130% at 50% 60%, rgba(0,0,0,0) 48%, rgba(60,40,15,0.30) 100%);}
+  ::selection{background:rgba(169,132,47,0.34)}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+  button{font-family:inherit;color:inherit;cursor:pointer}
+
+  .codex{position:relative;z-index:1;display:grid;grid-template-columns:248px 1fr;height:100vh;
+    animation:open 1.2s var(--ease) both}
+  @keyframes open{from{opacity:0;filter:blur(3px)}to{opacity:1;filter:none}}
+
+  /* ===== spine / rail ===== */
+  .spine{border-right:2px solid var(--gold-deep);background:linear-gradient(100deg,var(--vellum-deep),var(--vellum));
+    padding:30px 22px;display:flex;flex-direction:column;position:relative}
+  .spine::after{content:"";position:absolute;top:0;bottom:0;right:4px;width:1px;background:var(--gold);opacity:.5}
+  .wordmark{font-family:var(--black);font-size:25px;line-height:1.05;color:var(--ink);margin:0 4px 4px;letter-spacing:.01em}
+  .wordmark .r2{color:var(--verm)}
+  .sub-mark{font-family:var(--sc);font-size:11px;letter-spacing:.26em;color:var(--gold-deep);margin:0 4px 26px}
+  .toc-label{font-family:var(--sc);font-size:10px;letter-spacing:.24em;color:var(--ink-3);margin:0 6px 12px}
+  .plate-link{display:flex;align-items:center;gap:13px;padding:9px 10px;border:0;background:transparent;width:100%;
+    text-align:left;color:var(--ink-2);position:relative;transition:color .25s var(--ease)}
+  .plate-link .rn{font-family:var(--disp);font-size:13px;color:var(--gold-deep);width:20px;text-align:center;font-variant-numeric:lining-nums}
+  .plate-link .nm{font-family:var(--disp);font-size:19px;letter-spacing:.01em}
+  .plate-link:hover{color:var(--ink)}
+  .plate-link[aria-current="true"]{color:var(--verm)}
+  .plate-link[aria-current="true"] .rn{color:var(--verm)}
+  .plate-link[aria-current="true"]::before{content:"";position:absolute;left:-22px;top:8px;bottom:8px;width:3px;
+    background:var(--gold-hi);box-shadow:0 0 8px 1px rgba(217,182,90,.7)}
+  .spine-foot{margin-top:auto;padding:14px 6px 0;border-top:1px solid var(--rule)}
+  .inbox-pill{display:flex;align-items:center;gap:8px;font-family:var(--sc);font-size:11px;letter-spacing:.12em;color:var(--ink-3)}
+  .inbox-pill b{color:var(--verm);font-family:var(--disp);font-size:15px}
+  kbd{font-family:var(--sc);font-size:10px;border:1px solid var(--rule-2);border-radius:3px;padding:1px 5px}
+
+  /* ===== leaf (the page) ===== */
+  .leaf{overflow-y:auto;padding:0;position:relative}
+  .leaf::-webkit-scrollbar{width:12px}
+  .leaf::-webkit-scrollbar-thumb{background:var(--vellum-deep);border:4px solid var(--vellum);border-radius:8px}
+
+  /* top ribbon: intentions + capture + search */
+  .ribbon{position:sticky;top:0;z-index:8;display:flex;align-items:center;gap:16px;
+    padding:13px 40px;background:linear-gradient(180deg,var(--vellum) 70%,rgba(231,217,184,0));border-bottom:1px solid var(--rule)}
+  .ribbon .intents{display:flex;align-items:center;gap:12px;flex:1;min-width:0;overflow:hidden}
+  .ribbon .intents .lab{font-family:var(--sc);font-size:10px;letter-spacing:.2em;color:var(--gold-deep);flex:0 0 auto}
+  .intent{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--ink-2);white-space:nowrap;flex:0 0 auto}
+  .intent .tm{font-family:var(--disp);font-size:15px;color:var(--verm);font-variant-numeric:lining-nums}
+  .intent.missed{color:var(--ink-3)}
+  .intent.missed .tm{color:var(--ink-3)}
+  .search-mini{display:flex;align-items:center;gap:8px;border:1px solid var(--rule-2);border-radius:4px;padding:6px 11px;background:var(--vellum-lit)}
+  .search-mini input{border:0;background:transparent;font-family:var(--disp);font-size:16px;color:var(--ink);outline:none;width:190px}
+  .quill{border:1px solid var(--gold-deep);background:rgba(169,132,47,.12);border-radius:4px;padding:7px 13px;
+    font-family:var(--sc);font-size:11px;letter-spacing:.14em;color:var(--gold-deep);display:flex;align-items:center;gap:7px}
+  .quill:hover{background:rgba(169,132,47,.22)}
+  .quill svg{width:14px;height:14px}
+
+  .room{display:none;max-width:1120px;margin:0 auto;padding:30px 56px 90px;
+    animation:turn .6s var(--ease) both}
+  .room.active{display:block}
+  @keyframes turn{from{opacity:0;transform:perspective(1400px) rotateY(7deg) translateX(26px)}
+    to{opacity:1;transform:none}}
+
+  /* historiated initial + heading */
+  .plate-head{display:flex;gap:22px;align-items:flex-start;margin-bottom:8px}
+  .initial{flex:0 0 88px;width:88px;height:88px;border:2px solid var(--gold);border-radius:4px;
+    background:var(--verm);display:grid;place-items:center;position:relative;
+    box-shadow:0 0 0 1px var(--gold-deep) inset, 0 6px 20px -10px rgba(60,40,15,.6)}
+  .initial::before{content:"";position:absolute;inset:5px;border:1px solid rgba(217,182,90,.6);border-radius:2px}
+  .initial span{font-family:var(--disp);font-weight:600;font-size:58px;color:#f3e7c4;line-height:1;
+    text-shadow:0 1px 0 rgba(0,0,0,.3)}
+  .plate-title{padding-top:4px}
+  .eyebrow{font-family:var(--sc);font-size:11px;letter-spacing:.24em;color:var(--gold-deep);margin:0 0 6px}
+  h1{font-family:var(--disp);font-weight:500;font-size:46px;line-height:1.02;margin:0;letter-spacing:.005em}
+  .lede{font-family:var(--serif);font-style:italic;color:var(--ink-2);font-size:18px;max-width:62ch;margin:14px 0 0}
+  .gold-rule{height:0;border:0;border-top:2px solid var(--gold);position:relative;margin:30px 0;opacity:.75}
+  .gold-rule::after{content:"❧";position:absolute;left:50%;top:-15px;transform:translateX(-50%);background:var(--vellum);
+    padding:0 14px;color:var(--gold);font-size:18px}
+
+  /* scribe / resident marginal voice */
+  .scribe{display:flex;gap:16px;align-items:flex-start;margin:26px 0;padding-left:4px}
+  .scribe .seal{flex:0 0 30px;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gold);
+    display:grid;place-items:center;color:var(--gold-deep);margin-top:6px}
+  .scribe .seal svg{width:15px;height:15px}
+  .scribe p{font-family:var(--serif);font-style:italic;font-size:20px;line-height:1.5;color:var(--ink);max-width:56ch;margin:0}
+
+  .epigraph{font-family:var(--serif);font-style:italic;color:var(--ink-2);font-size:16px;text-align:center;
+    border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:14px 0;margin:0 0 30px}
+  .epigraph .src{font-family:var(--sc);font-style:normal;font-size:10px;letter-spacing:.18em;color:var(--ink-3);display:block;margin-top:6px}
+
+  /* panels / cards */
+  .panel{background:var(--panel);border:1px solid var(--rule-2);border-radius:5px;padding:24px 28px;position:relative}
+  .panel.lit{box-shadow:0 0 50px -22px rgba(169,132,47,.7);border-color:var(--gold-deep)}
+  .panel .corner{position:absolute;width:13px;height:13px;border:1px solid var(--gold);opacity:.55}
+  .corner.tl{top:7px;left:7px;border-right:0;border-bottom:0}
+  .corner.tr{top:7px;right:7px;border-left:0;border-bottom:0}
+  .corner.bl{bottom:7px;left:7px;border-right:0;border-top:0}
+  .corner.br{bottom:7px;right:7px;border-left:0;border-top:0}
+  .tag{font-family:var(--sc);font-size:10px;letter-spacing:.2em;color:var(--verm)}
+
+  .resume .t{font-family:var(--disp);font-size:27px;font-weight:500;margin:8px 0 3px}
+  .resume .meta{font-family:var(--sc);font-size:12px;letter-spacing:.08em;color:var(--ink-3);margin-bottom:16px}
+  .why{background:rgba(126,39,22,.06);border-left:3px solid var(--verm);padding:12px 16px;font-style:italic;font-size:17px;margin-bottom:18px}
+  .why b{font-family:var(--sc);font-style:normal;font-size:10px;letter-spacing:.16em;color:var(--verm);display:block;margin-bottom:3px;font-weight:400}
+  .resume .next{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  .nx i{font-style:normal;color:var(--ink-3);font-family:var(--sc);font-size:11px;letter-spacing:.1em}
+
+  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--verm);color:#f3e7c4;border:1px solid var(--verm-2);
+    border-radius:4px;padding:9px 17px;font-family:var(--sc);font-size:12px;letter-spacing:.12em;
+    transition:transform .12s var(--ease),background .2s}
+  .btn:hover{background:var(--verm-2)}
+  .btn:active{transform:scale(.97)}
+  .btn svg{width:14px;height:14px}
+  .btn.gold{background:rgba(169,132,47,.14);color:var(--gold-deep);border-color:var(--gold-deep)}
+  .btn.gold:hover{background:rgba(169,132,47,.26)}
+  .btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--rule-2)}
+  .btn.ghost:hover{border-color:var(--gold-deep);color:var(--ink)}
+
+  .momentum{display:flex;align-items:center;gap:10px;font-style:italic;color:var(--ink-2);margin:20px 4px}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
+  .dot.warm{background:var(--gold-hi);box-shadow:0 0 7px 1px rgba(217,182,90,.7)}
+  .dot.cooling{background:#b08a4a}.dot.cold{background:#9a8f7a}
+
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+  .mini-h{font-family:var(--sc);font-size:11px;letter-spacing:.18em;color:var(--gold-deep);margin-bottom:12px;display:flex;align-items:center;gap:9px}
+  .mini-h svg{width:16px;height:16px}
+  .bar{height:6px;background:rgba(51,39,26,.12);border-radius:3px;overflow:hidden;margin:12px 0;border:1px solid var(--rule)}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-deep),var(--gold-hi));transition:width .7s var(--ease)}
+  .closed{text-align:center;font-style:italic;color:var(--ink-3);font-size:16px;margin-top:42px}
+
+  /* ===== reading room ===== */
+  .deepbar{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+  .timer{display:none;align-items:center;gap:8px;font-family:var(--disp);font-size:17px;color:var(--verm);font-variant-numeric:lining-nums}
+  .timer.on{display:flex}
+  .reader-wrap{display:grid;grid-template-columns:1fr 290px;gap:50px;align-items:start;position:relative}
+  .reader{position:relative;max-width:60ch;border-left:1px solid var(--verm);border-right:1px solid var(--verm);
+    padding:0 40px;margin-left:6px}
+  .reader::before,.reader::after{content:"";position:absolute;top:0;bottom:0;width:1px;background:var(--rule)}
+  .reader::before{left:-7px}.reader::after{right:-7px}
+  .reader .rmeta{font-family:var(--sc);font-size:11px;letter-spacing:.14em;color:var(--ink-3);margin-bottom:22px}
+  .reader h2{font-family:var(--disp);font-weight:500;font-size:34px;line-height:1.08;margin:0 0 24px}
+  .rbody{font-size:19.5px;line-height:1.82}
+  .rbody p{margin:0 0 1.3em;text-align:justify;hyphens:auto}
+  .rbody p:first-of-type::first-letter{font-family:var(--disp);font-weight:600;font-size:78px;line-height:.78;float:left;
+    color:var(--verm);margin:6px 12px 0 0;text-shadow:1px 1px 0 rgba(169,132,47,.3)}
+  .rbody mark{background:linear-gradient(180deg,transparent 60%,rgba(169,132,47,.4) 60%);color:inherit;border-radius:1px}
+  .ribbon-mark{position:absolute;top:0;width:14px;background:var(--verm);right:-30px;
+    box-shadow:1px 0 3px rgba(0,0,0,.25);transition:height .3s var(--ease)}
+  .ribbon-mark::after{content:"";position:absolute;bottom:-12px;left:0;border:7px solid var(--verm);
+    border-bottom-color:transparent;border-right-color:transparent}
+
+  .capture-pop{position:absolute;z-index:30;width:282px;background:var(--vellum-lit);border:1px solid var(--gold-deep);
+    border-radius:5px;padding:15px;box-shadow:0 18px 44px -16px rgba(60,40,15,.7);display:none}
+  .capture-pop.on{display:block;animation:turn .25s var(--ease) both}
+  .capture-pop label{font-style:italic;font-size:16px;color:var(--verm);display:block;margin-bottom:9px}
+  textarea,.txt{width:100%;background:var(--vellum);border:1px solid var(--rule-2);color:var(--ink);border-radius:4px;
+    padding:9px;font-family:var(--serif);font-size:15px;resize:none;line-height:1.5}
+  .capture-pop textarea{height:64px}
+  .capture-pop .row{display:flex;justify-content:flex-end;gap:8px;margin-top:11px}
+  .capture-pop .btn{padding:6px 12px}
+
+  aside.margin h3{font-family:var(--sc);font-size:11px;letter-spacing:.2em;color:var(--gold-deep);margin:0 0 16px}
+  .mnote{border-left:2px solid var(--gold);padding:2px 0 2px 13px;margin-bottom:18px;animation:turn .3s var(--ease) both}
+  .mnote q{display:block;font-style:italic;color:var(--ink-2);font-size:14.5px;line-height:1.45;margin-bottom:5px}
+  .mnote .wl{font-size:14px;line-height:1.5}
+  .empty-note{font-style:italic;color:var(--ink-3);font-size:14px}
+  .thread{margin-top:32px;border-top:1px solid var(--rule);padding-top:22px}
+  .pin{display:flex;gap:9px;align-items:center;font-size:14px;color:var(--ink-2);padding:6px 0;font-style:italic}
+  .pin svg{width:13px;height:13px;color:var(--gold-deep)}
+  .ask{display:flex;gap:8px;margin-top:14px}
+  .ask .txt{flex:1;font-size:14px}
+  .ans{margin-top:13px;font-style:italic;font-size:14.5px;line-height:1.55;color:var(--ink-2);
+    background:rgba(169,132,47,.07);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;display:none}
+  .ans.on{display:block;animation:turn .3s var(--ease) both}
+  .pdf-note{font-family:var(--sc);font-size:10px;letter-spacing:.12em;color:var(--ink-3);margin-top:14px;font-style:normal}
+
+  .codex.deep .spine{opacity:.1;pointer-events:none}
+  .codex.deep aside.margin{opacity:.1;pointer-events:none}
+  .codex.deep .ribbon{opacity:.1}
+
+  /* ===== atlas — celestial chart ===== */
+  .chart-frame{border:2px solid var(--gold);border-radius:6px;padding:5px;background:var(--night);
+    box-shadow:0 0 60px -20px rgba(60,40,15,.6),0 0 0 1px var(--gold-deep) inset}
+  .chart-frame svg{display:block;width:100%;height:auto;border-radius:3px}
+  .constel{cursor:pointer}
+  .constel .halo{opacity:0;transition:opacity .3s}
+  .constel:hover .halo,.constel.sel .halo{opacity:1}
+  .c-name{font-family:var(--disp);font-size:17px;fill:#e9dcb6;letter-spacing:.04em}
+  .constel.sel .c-name{fill:var(--gold-hi)}
+  .c-line{stroke:rgba(217,182,90,.35);stroke-width:1}
+  .star{fill:#f0e6c8}
+  .star.done{fill:var(--gold-hi)}
+  .star.cur{fill:#fff}
+  .star.future{fill:rgba(240,230,200,.4)}
+  @keyframes twinkle{0%,100%{opacity:1}50%{opacity:.55}}
+  .star.cur{animation:twinkle 2.6s var(--ease) infinite}
+  .chart-cap{font-family:var(--sc);font-size:10px;letter-spacing:.18em;color:var(--ink-3);text-align:center;margin:12px 0 0}
+
+  .ladder-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin:30px 0 4px}
+  .ladder-head h2{font-family:var(--disp);font-weight:500;font-size:30px;margin:0}
+  .ladder-head .pos{font-family:var(--sc);font-size:12px;letter-spacing:.12em;color:var(--ink-3)}
+  .numeric{font-family:var(--disp);font-size:15px;color:var(--gold-deep);margin:6px 0 0;font-variant-numeric:lining-nums}
+  .ladder{position:relative;padding-left:36px;margin-top:24px}
+  .ladder::before{content:"";position:absolute;left:9px;top:6px;bottom:14px;width:2px;background:var(--rule-2)}
+  .rung{position:relative;padding-bottom:20px}
+  .rung .node{position:absolute;left:-36px;top:2px;width:20px;height:20px;border-radius:50%;
+    border:2px solid var(--rule-2);background:var(--vellum);display:grid;place-items:center}
+  .rung .node svg{width:11px;height:11px;color:var(--vellum);display:none}
+  .rung.done .node{background:var(--gold);border-color:var(--gold);box-shadow:0 0 10px -2px var(--gold-hi)}
+  .rung.done .node svg{display:block}
+  .rung.current .node{border-color:var(--verm);box-shadow:0 0 0 4px rgba(158,51,32,.12),0 0 14px rgba(158,51,32,.4)}
+  .rtitle{font-family:var(--disp);font-size:19px;color:var(--ink-2)}
+  .rung.done .rtitle{color:var(--ink-3)}
+  .rung.current .rtitle{color:var(--ink);font-size:22px}
+  .rung.future .rtitle{color:var(--ink-3)}
+  .rung-body{display:none;margin-top:13px;background:var(--vellum-lit);border:1px solid var(--gold-deep);border-radius:5px;padding:18px 20px}
+  .rung.current .rung-body{display:block;animation:turn .35s var(--ease) both}
+  .step{display:grid;grid-template-columns:92px 1fr;gap:12px;padding:7px 0;align-items:start}
+  .step .k{font-family:var(--sc);font-size:10px;letter-spacing:.14em;color:var(--verm);padding-top:4px}
+  .step .v{font-size:16px;line-height:1.5}
+  .rung-body .act{margin-top:15px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .hint{font-family:var(--sc);font-size:10px;letter-spacing:.1em;color:var(--ink-3)}
+
+  /* ===== life-maxxing ===== */
+  .vit-wrap{display:grid;grid-template-columns:340px 1fr;gap:40px;align-items:center;margin-bottom:10px}
+  .vit{border:2px solid var(--gold);border-radius:5px;background:var(--vellum-lit);padding:10px}
+  .vit svg{display:block;width:100%;height:auto}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+  .stat{background:var(--panel);border:1px solid var(--rule-2);border-radius:5px;padding:16px 18px;position:relative}
+  .stat .k{font-family:var(--sc);font-size:10px;letter-spacing:.14em;color:var(--gold-deep);margin-bottom:7px}
+  .stat .v{font-family:var(--disp);font-size:34px;font-weight:500;line-height:1;color:var(--ink);font-variant-numeric:lining-nums}
+  .stat .v small{font-size:16px;color:var(--ink-3)}
+  .stat .c{font-style:italic;font-size:13px;color:var(--ink-2);margin-top:6px}
+  .stat.crown{border-color:var(--verm);box-shadow:0 0 36px -18px rgba(158,51,32,.6)}
+  .stat.crown .v{color:var(--verm)}
+  .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:8px}
+  .chartcard{background:var(--panel);border:1px solid var(--rule-2);border-radius:5px;padding:18px 20px}
+  .chartcard h4{font-family:var(--sc);font-size:11px;letter-spacing:.16em;color:var(--gold-deep);margin:0 0 4px;font-weight:400}
+  .chartcard .now{font-family:var(--disp);font-size:22px;color:var(--ink);font-variant-numeric:lining-nums}
+  .chartcard svg{display:block;width:100%;height:auto;margin-top:8px}
+  .feats{margin-top:8px}
+  .feat{display:flex;gap:16px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--rule)}
+  .feat .fd{font-family:var(--sc);font-size:10px;letter-spacing:.1em;color:var(--ink-3);flex:0 0 78px}
+  .feat .ft{font-size:17px}
+  .feat .fk{font-family:var(--sc);font-size:9px;letter-spacing:.14em;color:var(--verm);margin-left:auto;flex:0 0 auto}
+
+  /* ===== cabinet ===== */
+  .cab-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .chip{font-family:var(--sc);font-size:10px;letter-spacing:.12em;border:1px solid var(--rule-2);border-radius:20px;
+    padding:6px 13px;color:var(--ink-2);background:transparent}
+  .chip[aria-pressed="true"]{background:var(--verm);color:#f3e7c4;border-color:var(--verm-2)}
+  .cab-search{border:1px solid var(--rule-2);border-radius:4px;padding:7px 12px;background:var(--vellum-lit);
+    font-family:var(--disp);font-size:16px;color:var(--ink);outline:none;flex:1;min-width:160px}
+  .cab-resurface{font-style:italic;color:var(--ink-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+    padding:13px 2px;margin:14px 0 22px;display:flex;align-items:center;gap:12px}
+  .cab-resurface .verm{color:var(--verm)}
+  .cab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+  .spec{background:var(--panel);border:1px solid var(--rule-2);border-radius:5px;padding:16px 17px;position:relative;
+    transition:transform .2s var(--ease),border-color .2s}
+  .spec:hover{transform:translateY(-2px);border-color:var(--gold-deep)}
+  .spec.attained{opacity:.66}
+  .spec .label{font-family:var(--sc);font-size:9px;letter-spacing:.14em;color:var(--gold-deep);margin-bottom:7px}
+  .spec .name{font-family:var(--disp);font-size:19px;line-height:1.15;margin-bottom:10px}
+  .spec .meta{font-family:var(--sc);font-size:9px;letter-spacing:.1em;color:var(--ink-3);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .spec .seal-done{position:absolute;top:12px;right:12px;color:var(--verm);font-family:var(--sc);font-size:9px;letter-spacing:.12em;display:none}
+  .spec.attained .seal-done{display:block}
+  .mark-done{font-family:var(--sc);font-size:10px;letter-spacing:.1em;border:1px solid var(--gold-deep);background:transparent;
+    border-radius:4px;padding:6px 11px;color:var(--gold-deep)}
+  .mark-done:hover{background:rgba(169,132,47,.16)}
+  .spec.attained .mark-done{display:none}
+
+  /* observatory */
+  .obs .line{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--rule);align-items:baseline}
+  .obs .line:last-child{border:0}
+  .obs .ok{font-family:var(--sc);font-size:10px;letter-spacing:.12em;color:var(--gold-deep);flex:0 0 130px}
+  .obs .ov{font-size:17px}
+  .colophon{font-family:var(--sc);font-size:10px;letter-spacing:.16em;color:var(--ink-3);text-align:center;margin-top:40px;line-height:1.8}
+
+  /* capture slip (modal-ish, in-flow faux viewport) */
+  .scrim{display:none;min-height:100vh;position:absolute;inset:0;z-index:40;background:rgba(40,28,12,.5);
+    align-items:flex-start;justify-content:center;padding-top:14vh}
+  .scrim.on{display:flex}
+  .slip{width:440px;max-width:90%;background:var(--vellum-lit);border:2px solid var(--gold);border-radius:6px;
+    padding:26px 28px;box-shadow:0 30px 70px -20px rgba(0,0,0,.6);animation:turn .3s var(--ease) both}
+  .slip h3{font-family:var(--disp);font-weight:500;font-size:24px;margin:0 0 4px}
+  .slip .sub{font-family:var(--sc);font-size:10px;letter-spacing:.16em;color:var(--ink-3);margin-bottom:16px}
+  .slip textarea{height:84px;font-size:16px}
+  .kinds{display:flex;gap:7px;margin:12px 0}
+  .kind{font-family:var(--sc);font-size:10px;letter-spacing:.1em;border:1px solid var(--rule-2);border-radius:18px;
+    padding:5px 12px;background:transparent;color:var(--ink-2)}
+  .kind[aria-pressed="true"]{background:var(--gold);color:var(--vellum);border-color:var(--gold-deep)}
+  .slip .row{display:flex;justify-content:flex-end;gap:9px;margin-top:8px}
+
+  /* heartbeat pulse on the live resume card */
+  @keyframes heartbeat{0%,100%{border-left-color:var(--gold)}50%{border-left-color:var(--gold-hi)}}
+  .resume.live{animation:heartbeat 4s ease infinite}
+
+  /* ink confirmation — replaces software toasts per design spec */
+  .ink-confirm{position:fixed;bottom:2rem;right:2.5rem;z-index:60;
+    font-family:var(--serif);font-size:.85rem;color:#8b7355;pointer-events:none;
+    animation:ink-appear 2.4s ease forwards;}
+  @keyframes ink-appear{
+    0%  {opacity:0;transform:translateY(4px);filter:blur(1.5px)}
+    15% {opacity:.9;transform:translateY(0);filter:blur(0)}
+    75% {opacity:.9}
+    100%{opacity:0}
+  }
+  /* vault picker overlay */
+  #vault-overlay{position:fixed;inset:0;z-index:100;background:var(--vellum);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+    font-family:var(--serif);}
+  #vault-overlay h2{font-family:var(--disp);font-size:2rem;color:var(--ink);margin:0}
+  #vault-overlay p{color:var(--ink-2);font-size:1rem;max-width:400px;text-align:center;margin:0}
+  #vault-overlay button{font-family:var(--sc);font-size:.8rem;letter-spacing:.12em;
+    padding:12px 28px;background:var(--gold);color:var(--vellum);border:none;cursor:pointer;
+    border-radius:2px}
+
+  @media (max-width:920px){
+    .codex{grid-template-columns:60px 1fr}
+    .wordmark,.sub-mark,.toc-label,.plate-link .nm,.spine-foot{display:none}
+    .plate-link{justify-content:center;padding:11px 0}
+    .room{padding:24px 22px 80px}
+    .reader-wrap,.vit-wrap{grid-template-columns:1fr;gap:28px}
+    aside.margin{order:2}
+    .ribbon{padding:11px 22px}.search-mini input{width:120px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="codex" id="codex">
+
+  <!-- ===== SPINE ===== -->
+  <nav class="spine" aria-label="Plates">
+    <div class="wordmark">Renaissance<br><span class="r2">Man</span></div>
+    <div class="sub-mark">l'uomo universale</div>
+    <div class="toc-label">— the plates —</div>
+
+    <button class="plate-link" data-room="threshold" aria-current="true"><span class="rn">I</span><span class="nm">Threshold</span></button>
+    <button class="plate-link" data-room="reading"><span class="rn">II</span><span class="nm">Reading room</span></button>
+    <button class="plate-link" data-room="atlas"><span class="rn">III</span><span class="nm">Atlas</span></button>
+    <button class="plate-link" data-room="life"><span class="rn">IV</span><span class="nm">Life-maxxing</span></button>
+    <button class="plate-link" data-room="cabinet"><span class="rn">V</span><span class="nm">Cabinet</span></button>
+    <button class="plate-link" data-room="observatory"><span class="rn">VI</span><span class="nm">Observatory</span></button>
+
+    <div class="spine-foot">
+      <div class="inbox-pill" id="inboxpill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7l9 6 9-6M3 7v10h18V7M3 7l9-4 9 4"/></svg> inbox <b id="inboxn">0</b></div>
+      <div style="font-family:var(--sc);font-size:10px;letter-spacing:.1em;color:var(--ink-3);margin-top:9px"><kbd>⌘</kbd><kbd>N</kbd> capture · <kbd>⌘</kbd><kbd>K</kbd> read</div>
+    </div>
+  </nav>
+
+  <!-- ===== LEAF ===== -->
+  <div class="leaf">
+    <div class="ribbon">
+      <div class="intents" id="intents">
+        <span class="lab">today's intentions</span>
+      </div>
+      <div class="search-mini"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="globalsearch" placeholder="seek a half-remembered idea…"></div>
+      <button class="quill" id="capquill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M16 4l4 4-11 11-5 1 1-5z"/><path d="M14 6l4 4"/></svg> capture</button>
+    </div>
+
+    <!-- I · THRESHOLD -->
+    <section class="room active" id="threshold">
+      <div class="plate-head">
+        <div class="initial"><span>T</span></div>
+        <div class="plate-title"><p class="eyebrow">Plate I · the threshold · evening</p><h1>The door closes<br>behind you</h1></div>
+      </div>
+      <hr class="gold-rule">
+
+      <div class="epigraph">“Knowledge, once genuinely won, refuses to stay where you put it.”<span class="src">— kept from Deutsch, three days ago</span></div>
+
+      <div class="scribe">
+        <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4l4 4-9 9-4 1 1-4z"/></svg></span>
+        <p>You left Deutsch mid-argument. I'd begin there — the rest of the world can keep till morning.</p>
+      </div>
+
+      <div class="panel lit resume" style="margin-bottom:8px">
+        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="tag">⸻ continue where you were ⸻</span>
+        <div class=”t” id=”resume-title”>The Beginning of Infinity</div>
+        <div class=”meta”>David Deutsch · chapter III · folio 62 · opened yesterday</div>
+        <div class=”why”><b>why it mattered to you</b><span id=”resume-why”>That <i>explanations</i>, not predictions, are the real unit of knowledge.</span></div>
+        <div class=”next”>
+          <div class=”nx”><i>next —</i> <span id=”resume-next”>re-state his “reach” argument in four sentences, the book closed.</span></div>
+          <button class="btn" data-goread><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 4 20 12 6 20"/></svg> re-enter</button>
+        </div>
+      </div>
+
+      <div class="momentum"><span class="dot cooling"></span> Cooling — your thread on <em>attention &amp; dopamine</em> has lain untouched nine days.</div>
+
+      <div class="grid2">
+        <div class="panel">
+          <div class="mini-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M4 8l8-5 8 5M6 21h12"/></svg> on the ladder</div>
+          <div style="font-family:var(--disp);font-size:21px" id="th-goal-title">Fluency in probability</div>
+          <div style="font-family:var(--sc);font-size:11px;letter-spacing:.1em;color:var(--ink-3)" id="th-goal-pos">rung 4 of 11</div>
+          <div class="bar"><i id="th-goal-bar" style="width:36%"></i></div>
+          <div style="font-size:16px"><span class="hint">this rung —</span> <span id="th-goal-rung" style="font-style:italic">derive Bayes from the product rule, by hand.</span></div>
+          <button class="btn ghost" style="margin-top:16px" data-jump="atlas">open the Atlas →</button>
+        </div>
+        <div class="panel">
+          <div class="mini-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12c1 1 1 2 1 2h6s0-1 1-2a7 7 0 0 0-4-12z"/></svg> one rabbit hole</div>
+          <div style="font-family:var(--disp);font-size:21px">Why snowflakes branch</div>
+          <div style="font-family:var(--sc);font-size:11px;letter-spacing:.1em;color:var(--ink-3);margin-bottom:14px">physics · dendritic growth · ~12 min</div>
+          <button class="btn gold" data-goread><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg> send to reading room</button>
+        </div>
+      </div>
+      <p class="closed">❧ The feed is closed for today. Nothing else needs you. ❧</p>
+    </section>
+
+    <!-- II · READING ROOM -->
+    <section class="room" id="reading">
+      <div class="plate-head">
+        <div class="initial"><span>R</span></div>
+        <div class="plate-title"><p class="eyebrow">Plate II · the reading room</p><h1>One column,<br>one light</h1></div>
+      </div>
+      <hr class="gold-rule">
+      <div class="deepbar">
+        <button class="btn gold" id="deep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg> deep dive</button>
+        <span class="timer" id="timer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span id="tval">00:00</span></span>
+      </div>
+
+      <div class="reader-wrap">
+        <article class="reader" id="reader">
+          <div class="ribbon-mark" id="ribbonmark" style="height:62%"></div>
+          <div class="rmeta">David Deutsch · chapter III · <span id="readpct">62%</span></div>
+          <h2>The reach of an explanation</h2>
+          <div class="rbody" id="rbody">
+            <p>It is tempting to think that knowledge is a heap of facts, and that to know more is simply to have gathered more of them. But facts are cheap and very nearly inert. What does the work — what lets us reach beyond the cases we have actually seen — is the explanation that binds the facts together and tells us why they must be so.</p>
+            <p>Consider any good explanation you have ever met. Its power lay not in summarising what was already observed, but in the way it strained against alteration. A good explanation is hard to vary while still accounting for what it accounts for; change one part and the whole contrivance ceases to work. That rigidity is no weakness. It is precisely the source of its reach.</p>
+            <p>Reach is the quiet miracle at the centre of all understanding. We solve a problem that sits before us, and the solution, if it is a true explanation and not a patch, turns out to apply to a thousand problems we never had in mind. The same equations that govern a falling apple govern a moon that does not fall. Knowledge, once genuinely won, refuses to stay where you put it.</p>
+            <p>This is why prediction alone is so thin a measure of what we know. A rule that merely predicts may be true and yet explain nothing — it tells us what, never why, and so it cannot reach. Highlight any line here and the resident will ask the one question that matters: why did this matter to you. That single forced answer is what turns a passage you read into a thing you keep.</p>
+          </div>
+          <div class="capture-pop" id="capture">
+            <label>Why did this matter to you?</label>
+            <textarea id="captext" placeholder="One honest line is enough."></textarea>
+            <div class="row"><button class="btn ghost" id="capcancel">cancel</button><button class="btn" id="capsave">keep it</button></div>
+          </div>
+        </article>
+
+        <aside class="margin">
+          <h3>— kept from this reading —</h3>
+          <div id="notes"><p class="empty-note">Nothing kept yet. Select a line to begin your commonplace.</p></div>
+          <div class="thread">
+            <h3>— research thread · explanation —</h3>
+            <div class="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5c2-1 6-1 8 1 2-2 6-2 8-1v14c-2-1-6-1-8 1-2-2-6-2-8-1z"/></svg> Deutsch — Beginning of Infinity</div>
+            <div class="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3v18M3 9h12M16 3l5 5-5 5"/></svg> Popper — Conjectures &amp; Refutations</div>
+            <div class="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg> your note — “falsifiability vs reach”</div>
+            <div class="ask"><input class="txt" id="threadq" placeholder="ask across these three…"><button class="btn" id="threadgo">ask</button></div>
+            <div class="ans" id="threadans"></div>
+            <p class="pdf-note">drop a pdf or url here → renders in this column (next build)</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- III · ATLAS -->
+    <section class="room" id="atlas">
+      <div class="plate-head">
+        <div class="initial"><span>A</span></div>
+        <div class="plate-title"><p class="eyebrow">Plate III · the atlas · goals as constellations</p><h1>What you<br>are becoming</h1></div>
+      </div>
+      <hr class="gold-rule">
+      <p class="lede" style="margin-bottom:22px">Each goal is a constellation you are charting, star by star. You face only the next one — and no star is lit by reading alone. Each asks you to <em>make</em> something. Tap a constellation to open its path.</p>
+
+      <div class="chart-frame">
+        <svg viewBox="0 0 1000 430" id="starchart">
+          <defs><radialGradient id="halo"><stop offset="0%" stop-color="#d9b65a" stop-opacity="0.5"/><stop offset="100%" stop-color="#d9b65a" stop-opacity="0"/></radialGradient></defs>
+          <!-- faint background stars -->
+          <g fill="#cdbf99" opacity="0.5">
+            <circle cx="120" cy="60" r="1"/><circle cx="300" cy="40" r="1.3"/><circle cx="500" cy="70" r="1"/><circle cx="700" cy="45" r="1.2"/><circle cx="880" cy="80" r="1"/>
+            <circle cx="200" cy="200" r="1"/><circle cx="620" cy="180" r="1.1"/><circle cx="820" cy="240" r="1"/><circle cx="420" cy="320" r="1.2"/><circle cx="120" cy="360" r="1"/>
+            <circle cx="950" cy="380" r="1"/><circle cx="560" cy="400" r="1"/><circle cx="760" cy="360" r="1.1"/><circle cx="360" cy="120" r="1"/>
+          </g>
+        </svg>
+      </div>
+      <p class="chart-cap">— a chart of the territories of one mind —</p>
+
+      <div id="ladderpane"></div>
+    </section>
+
+    <!-- IV · LIFE-MAXXING -->
+    <section class="room" id="life">
+      <div class="plate-head">
+        <div class="initial"><span>L</span></div>
+        <div class="plate-title"><p class="eyebrow">Plate IV · life-maxxing · the complete person</p><h1>Mind and body,<br>one notebook</h1></div>
+      </div>
+      <hr class="gold-rule">
+
+      <div class="vit-wrap">
+        <div class="vit">
+          <svg viewBox="0 0 300 320">
+            <rect x="40" y="60" width="220" height="220" fill="none" stroke="var(--gold-deep)" stroke-width="1"/>
+            <circle cx="150" cy="170" r="110" fill="none" stroke="var(--gold)" stroke-width="1"/>
+            <g stroke="var(--ink-2)" stroke-width="1.3" fill="none" stroke-linecap="round">
+              <circle cx="150" cy="92" r="16"/>
+              <path d="M150 108 V210"/>
+              <path d="M150 128 L96 150 M150 128 L204 150"/>
+              <path d="M150 128 L100 96 M150 128 L200 96"/>
+              <path d="M150 210 L118 290 M150 210 L182 290"/>
+              <path d="M150 210 L108 262 M150 210 L192 262"/>
+            </g>
+            <circle cx="150" cy="170" r="2.5" fill="var(--verm)"/>
+            <text x="150" y="312" text-anchor="middle" font-family="var(--sc)" font-size="9" letter-spacing="2" fill="var(--ink-3)">homo bene figuratus</text>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-grid">
+            <div class="stat crown">
+              <div class="k">re-entry rate</div>
+              <div class="v">82<small>%</small></div>
+              <div class="c">of what you dropped, you came back to. The number that proves the system works.</div>
+            </div>
+            <div class="stat"><div class="k">depth vs breadth</div><div class="v">7<small>:3</small></div><div class="c">a deep week.</div></div>
+            <div class="stat"><div class="k">focus reclaimed</div><div class="v">14<small>h</small></div><div class="c">from the deep-dive timer, this month.</div></div>
+            <div class="stat"><div class="k">passages kept</div><div class="v">63</div><div class="c">each with its own “why”.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="gold-rule">
+
+      <div class="charts">
+        <div class="chartcard">
+          <h4>back squat · kg</h4><div class="now">100 kg <span style="font-family:var(--sc);font-size:11px;letter-spacing:.1em;color:var(--gold-deep)">toward 156</span></div>
+          <svg viewBox="0 0 280 90" preserveAspectRatio="none"><polyline fill="none" stroke="var(--verm)" stroke-width="2" points="0,78 40,72 80,68 120,58 160,52 200,44 240,38 280,30"/><line x1="0" y1="6" x2="280" y2="6" stroke="var(--gold)" stroke-dasharray="3 4" stroke-width="1"/></svg>
+        </div>
+        <div class="chartcard">
+          <h4>bodyweight · kg</h4><div class="now">78.4 kg</div>
+          <svg viewBox="0 0 280 90" preserveAspectRatio="none"><polyline fill="none" stroke="var(--ink-2)" stroke-width="2" points="0,40 40,44 80,38 120,42 160,36 200,34 240,38 280,33"/></svg>
+        </div>
+        <div class="chartcard">
+          <h4>your one life · in days</h4><div class="now">9,180 <span style="font-family:var(--sc);font-size:11px;letter-spacing:.1em;color:var(--ink-3)">lived</span></div>
+          <svg viewBox="0 0 280 90"><g fill="var(--gold)"><rect x="0" y="36" width="92" height="18" opacity="0.9"/></g><rect x="92" y="36" width="188" height="18" fill="none" stroke="var(--rule-2)"/><text x="0" y="78" font-family="var(--sc)" font-size="9" letter-spacing="1.5" fill="var(--ink-3)">a life of ~30,000 days · spend them on purpose</text></svg>
+        </div>
+      </div>
+
+      <hr class="gold-rule">
+      <p class="eyebrow" style="margin-bottom:16px">— the table of feats —</p>
+      <div class="feats">
+        <div class="feat"><span class="fd">14 jun</span><span class="ft">Bench press — new best, 82.5 kg × 5</span><span class="fk">strength</span></div>
+        <div class="feat"><span class="fd">02 jun</span><span class="ft">Finished &amp; bound: the Popper thread into a chapter</span><span class="fk">knowledge</span></div>
+        <div class="feat"><span class="fd">21 may</span><span class="ft">Stood beneath the aurora — Tromsø</span><span class="fk">attained</span></div>
+        <div class="feat"><span class="fd">08 may</span><span class="ft">Cleared the rung: “Bayes from the product rule”</span><span class="fk">mastery</span></div>
+        <div class="feat"><span class="fd">30 apr</span><span class="ft">First 100 kg squat</span><span class="fk">strength</span></div>
+      </div>
+    </section>
+
+    <!-- V · CABINET -->
+    <section class="room" id="cabinet">
+      <div class="plate-head">
+        <div class="initial"><span>C</span></div>
+        <div class="plate-title"><p class="eyebrow">Plate V · the cabinet of curiosities · all you mean to do</p><h1>A wishbook,<br>not a backlog</h1></div>
+      </div>
+      <hr class="gold-rule">
+
+      <div class="cab-tools">
+        <button class="chip" aria-pressed="true" data-filter="all">all</button>
+        <button class="chip" aria-pressed="false" data-filter="now">doable now</button>
+        <button class="chip" aria-pressed="false" data-filter="free">free</button>
+        <button class="chip" aria-pressed="false" data-filter="travel">travel</button>
+        <button class="chip" aria-pressed="false" data-filter="skill">skill</button>
+        <input class="cab-search" id="cabsearch" placeholder="search your curiosities…">
+      </div>
+      <div class="cab-resurface"><span class="dot warm"></span> You once wished to <span class="verm">learn to read the night sky by eye</span> — its season is open now.</div>
+      <div class="cab-grid" id="cabgrid"></div>
+    </section>
+
+    <!-- VI · OBSERVATORY -->
+    <section class="room" id="observatory">
+      <div class="plate-head">
+        <div class="initial"><span>O</span></div>
+        <div class="plate-title"><p class="eyebrow">Plate VI · the observatory · this week</p><h1>What moved</h1></div>
+      </div>
+      <hr class="gold-rule">
+      <div class="scribe">
+        <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4l4 4-9 9-4 1 1-4z"/></svg></span>
+        <p>A good week for depth, a thin one for breadth. You went deep on explanation and reach, kept five passages, added a stone to the squat, and let two threads cool. A fair trade.</p>
+      </div>
+      <div class="panel obs">
+        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <div class="line"><span class="ok">went deeper</span><span class="ov">Deutsch on explanation — three sittings, five kept passages</span></div>
+        <div class="line"><span class="ok">cleared a rung</span><span class="ov">Probability — “Bayes from the product rule”</span></div>
+        <div class="line"><span class="ok">the body</span><span class="ov">Squat from 97.5 → 100 kg · bodyweight steady</span></div>
+        <div class="line"><span class="ok">cooling</span><span class="ov">Attention &amp; dopamine — untouched nine days</span></div>
+        <div class="line"><span class="ok">a new seam</span><span class="ov">Your old note on falsifiability now binds to Deutsch's “reach”</span></div>
+        <div class="line"><span class="ok">worth re-lighting</span><span class="ov">The dopamine thread — shall I prepare a recap?</span></div>
+      </div>
+      <p class="colophon">⸻ thus the week, set down in the codex ⸻<br>renaissance man · a private press of one</p>
+    </section>
+
+  </div>
+</div>
+
+<!-- capture slip -->
+<div class="scrim" id="scrim">
+  <div class="slip">
+    <h3>Set it down before it's gone</h3>
+    <div class="sub">— the universal inbox · sorted later, never lost —</div>
+    <textarea class="txt" id="sliptext" placeholder="An idea, a wish, a link, a line to keep…"></textarea>
+    <div class="kinds">
+      <button class="kind" aria-pressed="true" data-kind="idea">idea</button>
+      <button class="kind" aria-pressed="false" data-kind="wish">wish</button>
+      <button class="kind" aria-pressed="false" data-kind="link">link</button>
+      <button class="kind" aria-pressed="false" data-kind="note">note</button>
+    </div>
+    <div class="row"><button class="btn ghost" id="slipcancel">cancel</button><button class="btn" id="slipsave">into the inbox</button></div>
+  </div>
+</div>
+
+<!-- vault picker overlay (hidden once vault is confirmed) -->
+<div id="vault-overlay" style="display:none">
+  <h2>Open your vault</h2>
+  <p>Choose the folder where Renaissance Man will keep your notes, readings, and goals.</p>
+  <button id="vault-pick-btn">Choose folder</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(s,r){return (r||document).querySelector(s);};
+  var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+  var rid=function(){return Math.random().toString(36).slice(2,8);};
+
+  /* ---- rooms ---- */
+  var links=$$('.plate-link'), rooms=$$('.room'), leaf=$('.leaf');
+  function go(r){
+    rooms.forEach(function(x){x.classList.toggle('active',x.id===r);});
+    links.forEach(function(l){l.setAttribute('aria-current',l.dataset.room===r?'true':'false');});
+    leaf.scrollTop=0;
+  }
+  links.forEach(function(l){l.addEventListener('click',function(){go(l.dataset.room);});});
+  $$('[data-jump]').forEach(function(b){b.addEventListener('click',function(){go(b.getAttribute('data-jump'));});});
+  $$('[data-goread]').forEach(function(b){b.addEventListener('click',function(){go('reading');});});
+
+  /* ---- ink confirmation (replaces toasts — per design spec) ---- */
+  function flash(m){
+    var el=document.createElement('span');
+    el.className='ink-confirm';el.textContent=m;
+    document.body.appendChild(el);
+    el.addEventListener('animationend',function(){el.remove();});
+  }
+
+  /* ---- universal capture ---- */
+  var scrim=$('#scrim'),inbox=[],inboxN=$('#inboxn');
+  function openSlip(){scrim.classList.add('on');setTimeout(function(){$('#sliptext').focus();},40);}
+  function closeSlip(){scrim.classList.remove('on');$('#sliptext').value='';}
+  $('#capquill').addEventListener('click',openSlip);
+  $('#slipcancel').addEventListener('click',closeSlip);
+  scrim.addEventListener('click',function(e){if(e.target===scrim)closeSlip();});
+  $$('.kind').forEach(function(k){k.addEventListener('click',function(){$$('.kind').forEach(function(x){x.setAttribute('aria-pressed','false');});k.setAttribute('aria-pressed','true');});});
+  $('#slipsave').addEventListener('click',function(){
+    var t=$('#sliptext').value.trim();if(!t){$('#sliptext').focus();return;}
+    var kind=$('.kind[aria-pressed="true"]').dataset.kind;
+    closeSlip();
+    // Persist to vault via Tauri bridge; fall back to in-memory for browser dev
+    if(window.Bridge){
+      window.Bridge.capture.save(kind,[],t).then(function(){
+        flash('kept in the inbox · '+kind);
+        loadThresholdCard();
+      }).catch(function(e){flash('error: '+e);});
+    } else {
+      inbox.push({t:t,kind:kind});inboxN.textContent=inbox.length;
+      flash('kept in the inbox · '+kind);
+    }
+  });
+
+  /* ---- reading: highlight → why → marginalia ---- */
+  var body=$('#rbody'),cap=$('#capture'),capText=$('#captext'),notes=$('#notes');
+  var savedRange=null,savedText='';
+  body.addEventListener('mouseup',function(){
+    var sel=window.getSelection();if(!sel||sel.isCollapsed)return;
+    var txt=sel.toString().trim();if(txt.length<3||!body.contains(sel.anchorNode))return;
+    savedText=txt;savedRange=sel.getRangeAt(0).cloneRange();
+    var rect=sel.getRangeAt(0).getBoundingClientRect(),host=$('#reader').getBoundingClientRect();
+    cap.style.top=(rect.bottom-host.top+8)+'px';
+    cap.style.left=Math.max(0,Math.min(rect.left-host.left,$('#reader').clientWidth-292))+'px';
+    cap.classList.add('on');capText.value='';setTimeout(function(){capText.focus();},40);
+  });
+  function closeCap(){cap.classList.remove('on');savedRange=null;savedText='';var s=window.getSelection();if(s)s.removeAllRanges();}
+  $('#capcancel').addEventListener('click',closeCap);
+  $('#capsave').addEventListener('click',function(){
+    var why=capText.value.trim();
+    if(savedRange){try{var m=document.createElement('mark');savedRange.surroundContents(m);}catch(e){}}
+    var em=notes.querySelector('.empty-note');if(em)em.remove();
+    var n=document.createElement('div');n.className='mnote';
+    var short=savedText.length>88?savedText.slice(0,88)+'…':savedText;
+    n.innerHTML='<q>“'+short.replace(/</g,'&lt;')+'”</q><div class="wl">'+(why?why.replace(/</g,'&lt;'):'<span style="color:var(--ink-3);font-style:italic">— kept without a note</span>')+'</div>';
+    notes.appendChild(n);closeCap();
+  });
+
+  /* reading progress + ribbon bookmark */
+  leaf.addEventListener('scroll',function(){
+    if(!$('#reading').classList.contains('active'))return;
+    var max=leaf.scrollHeight-leaf.clientHeight,p=max>0?Math.min(100,Math.round(leaf.scrollTop/max*100)):0;
+    var pct=Math.max(62,p);$('#readpct').textContent=pct+'%';$('#ribbonmark').style.height=pct+'%';
+  });
+
+  /* deep dive */
+  var codex=$('#codex'),deep=$('#deep'),timer=$('#timer'),tval=$('#tval'),tk=null,sec=0;
+  deep.addEventListener('click',function(){
+    var on=codex.classList.toggle('deep');
+    if(on){timer.classList.add('on');sec=0;tval.textContent='00:00';tk=setInterval(function(){sec++;var m=Math.floor(sec/60),s=sec%60;tval.textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;},1000);deep.lastChild.textContent=' leave the dive';}
+    else{timer.classList.remove('on');clearInterval(tk);deep.lastChild.textContent=' deep dive';}
+  });
+
+  /* thread ask */
+  var ans=$('#threadans');
+  $('#threadgo').addEventListener('click',function(){
+    var q=$('#threadq').value.trim();ans.classList.add('on');
+    ans.textContent=q?'Across all three: Popper supplies the test — an explanation must risk being wrong; Deutsch supplies the prize — a good one reaches far past its evidence; and your own note already saw the seam. Falsifiability keeps an explanation honest; reach is what makes it worth keeping.':'Ask, and I answer only from these three — nothing else.';
+  });
+
+  /* ---- ATLAS ---- */
+  var check='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4 10-11"/></svg>';
+  var goals=[
+    {id:'prob',title:'Fluency in probability',domain:'mathematics',kind:'mastery',temp:'warm',
+     cx:210,cy:140,shape:[[0,0],[40,-34],[92,-18],[120,28],[78,52],[26,40]],
+     rungs:[
+      {t:'Build intuition for randomness',consume:'Watch one careful intro to sample spaces.',produce:'Write the sample spaces of 3 everyday events by hand.',done:'You can describe a sample space without looking.',complete:true},
+      {t:'Master conditional probability',consume:'Read on conditioning; do 6 worked examples.',produce:'Re-solve Monty Hall and write why the intuition fails.',done:'You can explain conditioning to a clever 12-year-old.',complete:true},
+      {t:'Independence vs correlation',consume:'Read independence with counterexamples.',produce:'Build one pair: uncorrelated yet dependent.',done:'You can give the counterexample from memory.',complete:true},
+      {t:'Derive Bayes from the product rule',consume:'Review the product rule and conditional probability.',produce:'Derive Bayes on paper, then apply it to a medical test.',done:'You can re-derive it cold and explain the base-rate trap.',complete:false},
+      {t:'Random variables & expectation',consume:'Read on discrete variables and linearity of expectation.',produce:'Prove linearity and use it on a counting problem.',done:'You can find an expectation without summing term by term.',complete:false},
+      {t:'Variance & the spread of outcomes',consume:'Study variance and why we square.',produce:'Compute a die roll\u2019s variance two ways.',done:'You can say what variance buys over expectation.',complete:false},
+      {t:'The great distributions',consume:'Meet binomial, Poisson, normal.',produce:'Match 5 real situations to the fitting distribution.',done:'You can pick the right one from a description.',complete:false},
+      {t:'The central limit theorem',consume:'Study why normality emerges from sums.',produce:'Explain in writing why averages go normal.',done:'You can explain CLT without hand-waving.',complete:false},
+      {t:'Estimation & confidence',consume:'Read what a confidence interval truly means.',produce:'Write the correct reading of a 95% interval.',done:'You can say what is and isn\u2019t random in it.',complete:false},
+      {t:'Synthesis: model a real question',consume:'Pick a question you care about with uncertainty in it.',produce:'Build a small probabilistic model and write it up.',done:'You\u2019ve made one analysis you would defend.',complete:false}
+     ]},
+    {id:'gr',title:'Read general relativity',domain:'physics',kind:'mastery',temp:'cooling',
+     cx:560,cy:120,shape:[[0,0],[50,20],[30,70],[88,60],[110,12]],
+     rungs:[
+      {t:'Special relativity first',consume:'Read on simultaneity and spacetime intervals.',produce:'Draw the twin paradox as a spacetime diagram.',done:'You can explain why the interval is invariant.',complete:true},
+      {t:'Vectors, then tensors, slowly',consume:'Read tensors as machines that eat vectors.',produce:'Write what a (0,2) tensor does, in your words.',done:'Tensors feel like objects, not notation.',complete:false},
+      {t:'The metric tensor',consume:'Study how the metric encodes distance and time.',produce:'Compute an interval from a given metric.',done:'You can read a metric and say what it means.',complete:false},
+      {t:'Curvature & geodesics',consume:'Read geodesics as straightest possible paths.',produce:'Explain why orbits are straight lines in curved spacetime.',done:'You grasp what \u201cgravity is geometry\u201d means.',complete:false},
+      {t:'The field equations, conceptually',consume:'Read a walkthrough of G = 8\u03c0T.',produce:'Write what each side of the equation says.',done:'You can narrate the equation plainly.',complete:false},
+      {t:'Schwarzschild & the horizon',consume:'Read the meaning of the Schwarzschild solution.',produce:'Explain what the event horizon is and isn\u2019t.',done:'You understand one exact solution in depth.',complete:false},
+      {t:'Synthesis: explain GR with no maths',consume:'Gather your notes across the rungs.',produce:'Write a 1000-word explainer with no equations.',done:'A non-physicist friend finally gets it.',complete:false}
+     ]},
+    {id:'write',title:'Write with clarity',domain:'craft',kind:'mastery',temp:'warm',
+     cx:300,cy:330,shape:[[0,0],[60,-12],[100,18],[150,-6]],
+     rungs:[
+      {t:'Diagnose your own fog',consume:'Read one essay on plain prose.',produce:'Mark every vague word in a murky paragraph you wrote.',done:'You can spot your own hedging.',complete:true},
+      {t:'One idea per sentence',consume:'Study how strong writers cut clauses.',produce:'Rewrite a tangled passage as single-idea sentences.',done:'Your sentences carry one load each.',complete:true},
+      {t:'Verbs over nouns',consume:'Read on nominalisation.',produce:'Turn 10 zombie nouns back into verbs.',done:'Your sentences move.',complete:true},
+      {t:'Structure before style',consume:'Learn one-paragraph-one-point.',produce:'Outline a piece as one sentence per paragraph.',done:'The argument reads cleanly from the outline alone.',complete:true},
+      {t:'Cut to the bone',consume:'Read on omitting needless words.',produce:'Cut a finished piece by 20% without losing meaning.',done:'You feel the relief of a tighter draft.',complete:true},
+      {t:'Rhythm and the ear',consume:'Study how length sets pace.',produce:'Read aloud; rewrite where the ear stumbles.',done:'You edit by sound, not only sight.',complete:false},
+      {t:'Revise like a stranger',consume:'Read on cold revision.',produce:'Leave a draft a day, then edit as if a stranger wrote it.',done:'You can be ruthless with your own words.',complete:false},
+      {t:'Publish one clear thing',consume:'Choose the piece you\u2019re proudest of.',produce:'Polish and publish it somewhere real.',done:'It\u2019s out in the world, and it\u2019s clear.',complete:false}
+     ]},
+    {id:'squat',title:'Squat 2× bodyweight',domain:'body',kind:'numeric',temp:'warm',
+     metric:{name:'squat',current:100,target:156,unit:'kg'},
+     cx:740,cy:300,shape:[[0,0],[44,-30],[80,6],[120,-22],[150,18]],
+     rungs:[
+      {t:'Own bodyweight, deep and clean',consume:'Film a set; check depth and bracing.',produce:'Hit 5 clean reps at full depth at 80 kg.',done:'Depth and brace are honest, on video.',complete:true},
+      {t:'Build to 100 kg',consume:'Run a simple linear progression 8 weeks.',produce:'Hit a true 100 kg single.',done:'100 kg moved with form intact.',complete:true},
+      {t:'120 kg — past the wall',consume:'Add a weekly back-off and accessory work.',produce:'Hit 120 kg for a controlled single.',done:'120 kg with no form breakdown.',complete:false},
+      {t:'140 kg — strength, not just effort',consume:'Periodise; mind sleep and protein.',produce:'Hit 140 kg.',done:'140 kg banked and repeatable.',complete:false},
+      {t:'156 kg — twice bodyweight',consume:'Peak carefully; deload into the attempt.',produce:'Hit 156 kg — 2× your bodyweight.',done:'The plates say twice what you weigh.',complete:false}
+     ]}
+  ];
+  var selected='prob';
+  var chart=$('#starchart'),pane=$('#ladderpane'),NS='http://www.w3.org/2000/svg';
+  function curIdx(g){for(var i=0;i<g.rungs.length;i++)if(!g.rungs[i].complete)return i;return g.rungs.length-1;}
+  function doneN(g){return g.rungs.filter(function(r){return r.complete;}).length;}
+
+  function drawChart(){
+    $$('.constel',chart).forEach(function(n){n.remove();});
+    goals.forEach(function(g){
+      var grp=document.createElementNS(NS,'g');grp.setAttribute('class','constel'+(g.id===selected?' sel':''));
+      grp.style.cursor='pointer';
+      var halo=document.createElementNS(NS,'circle');halo.setAttribute('cx',g.cx+60);halo.setAttribute('cy',g.cy+10);
+      halo.setAttribute('r',120);halo.setAttribute('fill','url(#halo)');halo.setAttribute('class','halo');grp.appendChild(halo);
+      var ci=curIdx(g),pts=g.shape;
+      for(var i=0;i<pts.length-1;i++){
+        var ln=document.createElementNS(NS,'line');ln.setAttribute('class','c-line');
+        ln.setAttribute('x1',g.cx+pts[i][0]);ln.setAttribute('y1',g.cy+pts[i][1]);
+        ln.setAttribute('x2',g.cx+pts[i+1][0]);ln.setAttribute('y2',g.cy+pts[i+1][1]);grp.appendChild(ln);
+      }
+      pts.forEach(function(p,i){
+        var pct=i/(pts.length-1),rIdx=Math.round(pct*(g.rungs.length-1));
+        var cls=rIdx<ci?'done':(rIdx===ci?'cur':'future');
+        var st=document.createElementNS(NS,'circle');st.setAttribute('class','star '+cls);
+        st.setAttribute('cx',g.cx+p[0]);st.setAttribute('cy',g.cy+p[1]);st.setAttribute('r',cls==='cur'?4.5:(cls==='done'?3.2:2.4));grp.appendChild(st);
+      });
+      var tx=document.createElementNS(NS,'text');tx.setAttribute('class','c-name');
+      tx.setAttribute('x',g.cx+pts[0][0]-4);tx.setAttribute('y',g.cy+pts[0][1]+34);tx.textContent=g.title;grp.appendChild(tx);
+      grp.addEventListener('click',function(){selected=g.id;render();});
+      chart.appendChild(grp);
+    });
+  }
+
+  function drawLadder(){
+    var g=goals.filter(function(x){return x.id===selected;})[0];if(!g){pane.innerHTML='';return;}
+    var ci=curIdx(g),dn=doneN(g),pct=Math.round(dn/g.rungs.length*100);
+    var h='<div class="ladder-head"><h2>'+g.title+'</h2><span class="pos">rung '+(ci+1)+' of '+g.rungs.length+' · '+pct+'%</span></div>';
+    h+='<div class="momentum" style="margin:8px 0 0"><span class="dot '+g.temp+'"></span> '+g.domain+' · momentum '+g.temp+'</div>';
+    if(g.kind==='numeric'&&g.metric){h+='<p class="numeric">'+g.metric.name+' · now '+g.metric.current+' '+g.metric.unit+' → target '+g.metric.target+' '+g.metric.unit+'</p>';}
+    h+='<div class="bar" style="margin:14px 0 0"><i style="width:'+pct+'%"></i></div><div class="ladder">';
+    g.rungs.forEach(function(r,i){
+      var cls=r.complete?'done':(i===ci?'current':'future');
+      h+='<div class="rung '+cls+'"><span class="node">'+check+'</span><div class="rtitle">'+r.t+'</div>';
+      if(i===ci&&!r.complete){
+        h+='<div class="rung-body"><div class="step"><span class="k">consume</span><span class="v">'+r.consume+'</span></div>'+
+           '<div class="step"><span class="k">produce</span><span class="v" style="font-style:italic">'+r.produce+'</span></div>'+
+           '<div class="step"><span class="k">done when</span><span class="v">'+r.done+'</span></div>'+
+           '<div class="act"><button class="btn" data-done="'+g.id+'">'+check+' mark this star lit</button><span class="hint">the next lights only when this is truly done</span></div></div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';pane.innerHTML=h;
+    $$('[data-done]',pane).forEach(function(b){b.addEventListener('click',function(){lightStar(b.getAttribute('data-done'));});});
+  }
+  function lightStar(id){
+    var g=goals.filter(function(x){return x.id===id;})[0],ci=curIdx(g);
+    if(g.rungs[ci])g.rungs[ci].complete=true;if(g.temp==='cooling')g.temp='warm';
+    flash('a star is lit · '+g.title);render();
+  }
+  function syncThreshold(){
+    var g=goals[0],ci=curIdx(g);
+    $('#th-goal-title').textContent=g.title;$('#th-goal-pos').textContent='rung '+(ci+1)+' of '+g.rungs.length;
+    $('#th-goal-bar').style.width=Math.round(doneN(g)/g.rungs.length*100)+'%';$('#th-goal-rung').textContent=g.rungs[ci].produce;
+  }
+  function render(){drawChart();drawLadder();syncThreshold();}
+
+  /* ---- CABINET (bucket) ---- */
+  var bucket=[
+    {n:'See the aurora borealis',d:'travel',cost:'high',effort:'high',status:'attained',tags:'aurora northern lights iceland norway sky'},
+    {n:'Learn to read the night sky by eye',d:'skill',cost:'free',effort:'mid',now:true,status:'open',tags:'astronomy stars constellations sky navigation'},
+    {n:'Read Gödel, Escher, Bach cover to cover',d:'skill',cost:'low',effort:'high',status:'open',tags:'hofstadter logic music recursion book'},
+    {n:'Swim in a bioluminescent bay',d:'travel',cost:'high',effort:'high',status:'open',tags:'bioluminescence ocean glow night swim'},
+    {n:'Build a working telescope',d:'skill',cost:'mid',effort:'high',status:'open',tags:'optics lens mirror astronomy make build'},
+    {n:'Memorise a poem worth keeping',d:'skill',cost:'free',effort:'low',now:true,status:'open',tags:'poetry memory recitation verse'},
+    {n:'Stand inside the Pantheon at noon',d:'travel',cost:'high',effort:'mid',status:'open',tags:'rome architecture oculus light history'},
+    {n:'Cook one dish from each continent',d:'skill',cost:'low',effort:'mid',now:true,status:'open',tags:'cooking food world cuisine craft'},
+    {n:'Learn the basics of celestial navigation',d:'skill',cost:'free',effort:'mid',now:true,status:'open',tags:'sextant stars sea navigation latitude'},
+    {n:'Watch a total solar eclipse',d:'travel',cost:'mid',effort:'high',status:'open',tags:'eclipse sun moon sky rare'},
+    {n:'Write and bind one book of my own',d:'skill',cost:'low',effort:'high',status:'open',tags:'writing bookbinding craft publish make'},
+    {n:'See the Northern and Southern skies both',d:'travel',cost:'high',effort:'high',status:'open',tags:'hemisphere stars travel sky'},
+    {n:'Keep a garden through one whole year',d:'skill',cost:'low',effort:'mid',now:true,status:'open',tags:'garden plants seasons patience grow'},
+    {n:'Learn to sketch what I see',d:'skill',cost:'free',effort:'mid',now:true,status:'open',tags:'drawing sketch art observation'}
+  ];
+  var grid=$('#cabgrid'),cabFilter='all',cabQ='';
+  function renderCab(){
+    grid.innerHTML='';var shown=0;
+    bucket.forEach(function(b,i){
+      var pass=cabFilter==='all'||(cabFilter==='now'&&b.now)||(cabFilter==='free'&&b.cost==='free')||(cabFilter==='travel'&&b.d==='travel')||(cabFilter==='skill'&&b.d==='skill');
+      if(cabQ){var hay=(b.n+' '+b.tags+' '+b.d).toLowerCase();if(hay.indexOf(cabQ)===-1)pass=false;}
+      if(!pass)return;shown++;
+      var el=document.createElement('div');el.className='spec'+(b.status==='attained'?' attained':'');
+      el.innerHTML='<div class="label">'+b.d+' · '+b.cost+'</div><div class="name">'+b.n+'</div>'+
+        '<div class="meta"><span>effort: '+b.effort+'</span>'+(b.now?'<span style="color:var(--verm)">in season</span>':'')+'</div>'+
+        '<span class="seal-done">✦ attained</span>'+
+        (b.status==='open'?'<button class="mark-done" data-i="'+i+'">mark attained</button>':'');
+      grid.appendChild(el);
+    });
+    if(!shown)grid.innerHTML='<p class="empty-note" style="padding:20px 2px">Nothing here matches — try the shape of the wish, not the exact words.</p>';
+    $$('.mark-done',grid).forEach(function(b){b.addEventListener('click',function(){
+      var b2=bucket[+b.getAttribute('data-i')];b2.status='attained';flash('attained · '+b2.n);renderCab();});});
+  }
+  $$('.chip').forEach(function(c){c.addEventListener('click',function(){
+    $$('.chip').forEach(function(x){x.setAttribute('aria-pressed','false');});c.setAttribute('aria-pressed','true');
+    cabFilter=c.getAttribute('data-filter');renderCab();});});
+  $('#cabsearch').addEventListener('input',function(e){cabQ=e.target.value.toLowerCase().trim();renderCab();});
+
+  /* ---- today's intentions (schedule ribbon) ---- */
+  var intents=[
+    {tm:'19:30',t:'Re-enter Deutsch — chapter III',missed:false},
+    {tm:'20:15',t:'Atlas: the Bayes rung',missed:false},
+    {tm:'07:00',t:'Squat session — push for 102.5',missed:true}
+  ];
+  var iWrap=$('#intents');
+  intents.forEach(function(it){
+    var s=document.createElement('span');s.className='intent'+(it.missed?' missed':'');
+    s.innerHTML='<span class="tm">'+it.tm+'</span> '+it.t+(it.missed?' · <span style="font-style:italic">resurfaced</span>':'');
+    iWrap.appendChild(s);
+  });
+
+  /* ---- global search → vault-ish (here: just routes to reading for the demo) ---- */
+  $('#globalsearch').addEventListener('keydown',function(e){if(e.key==='Enter'){flash('search runs over your real vault in the full build');}});
+
+  /* keys */
+  document.addEventListener('keydown',function(e){
+    if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='n'){e.preventDefault();openSlip();}
+    if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();go('reading');}
+    if(e.key==='Escape'){closeSlip();closeCap();}
+  });
+
+  render();renderCab();
+
+  /* ---- Tauri vault overlay wiring ---- */
+  var vaultOverlay=$('#vault-overlay');
+  var vaultPickBtn=$('#vault-pick-btn');
+
+  function showVaultPicker(){vaultOverlay.style.display='flex';}
+  function hideVaultPicker(){vaultOverlay.style.display='none';}
+
+  if(vaultPickBtn){
+    vaultPickBtn.addEventListener('click',function(){
+      if(window.Bridge){
+        window.Bridge.vault.pick().then(function(){hideVaultPicker();}).catch(function(e){flash('could not open vault: '+e);});
+      }
+    });
+  }
+})();
+</script>
+
+<!-- Tauri IPC bridge + Threshold live data -->
+<script type="module">
+// Tauri bridge — thin typed wrapper; degrades gracefully in browser
+const IS_TAURI = typeof window.__TAURI__ !== 'undefined';
+const inv = (cmd, args={}) => IS_TAURI ? window.__TAURI__.invoke(cmd, args) : Promise.resolve(null);
+
+window.Bridge = {
+  vault: {
+    pick:       ()    => inv('pick_vault_folder'),
+    getPath:    ()    => inv('get_vault_path'),
+    listFiles:  (sub) => inv('list_vault_files',{subfolder:sub}),
+    pickOneThing: ()  => inv('pick_one_thing'),
+  },
+  notes: {
+    readParsed: (p)          => inv('read_note_parsed',{relative_path:p}),
+    write:      (p,fm,body)  => inv('write_frontmatter',{relative_path:p,frontmatter_val:fm,body}),
+    create:     (sub,slug,fm,body) => inv('create_note',{subfolder:sub,slug,frontmatter_val:fm,body}),
+    append:     (p,text)     => inv('append_to_note',{relative_path:p,text}),
+  },
+  capture: {
+    save:     (kind,tags,content) => inv('save_capture',{kind,tags,content}),
+    list:     (processed)         => inv('list_captures',{processed}),
+    markDone: (p)                 => inv('mark_capture_processed',{relative_path:p}),
+  },
+  pdf: {
+    saveHighlight: (rp,hl) => inv('save_highlight',{reading_path:rp,highlight:hl}),
+    import:        ()      => inv('import_pdf'),
+  },
+  search: {
+    fts:      (q,n) => inv('search_fts',{query:q,limit:n}),
+    semantic: (q,n) => inv('search_semantic',{query:q,limit:n}),
+    rebuild:  ()    => inv('rebuild_index'),
+  },
+  stats: {
+    logSession:   (type,path,pos) => inv('log_session_event',{event_type:type,reading_path:path,scroll_position:pos}),
+    reentryRate:  (days)          => inv('get_reentry_rate',{days}),
+  },
+};
+
+// Listen for vault-ready / show-vault-picker events from Rust setup()
+if (IS_TAURI) {
+  const { listen } = window.__TAURI__.event;
+
+  listen('vault-ready', () => {
+    const overlay = document.getElementById('vault-overlay');
+    if (overlay) overlay.style.display = 'none';
+    loadThresholdCard();
+  });
+
+  listen('show-vault-picker', () => {
+    const overlay = document.getElementById('vault-overlay');
+    if (overlay) overlay.style.display = 'flex';
+  });
+}
+
+// Load the "one thing" card onto the Threshold room
+async function loadThresholdCard() {
+  try {
+    const card = await window.Bridge.vault.pickOneThing();
+    if (!card) return;
+
+    // Update the resume panel in Threshold
+    const resumeTitle = document.getElementById('resume-title');
+    const resumeWhy   = document.getElementById('resume-why');
+    const resumeNext  = document.getElementById('resume-next');
+
+    if (resumeTitle) resumeTitle.textContent = card.title;
+    if (resumeWhy)   resumeWhy.textContent   = card.why;
+    if (resumeNext)  resumeNext.textContent  = card.next_action;
+
+    // Add heartbeat pulse class to the resume panel
+    const resumePanel = document.querySelector('.resume');
+    if (resumePanel) resumePanel.classList.add('live');
+  } catch (e) {
+    console.debug('[threshold] no vault data yet:', e);
+  }
+}
+
+// Expose loadThresholdCard globally for the capture save handler
+window.loadThresholdCard = loadThresholdCard;
+</script>
+</body>
+</html>
