@@ -1,0 +1,12 @@
+# Rust build artifacts
+src-tauri/target/
+
+# Vault cache (always rebuildable from Markdown)
+**/.renaissance/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (for future tooling)
+node_modules/
