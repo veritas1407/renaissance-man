@@ -165,6 +165,154 @@ text: "..."
 
 ## 6. Visual philosophy — the illuminated palace
 
+## Visual Philosophy — The Palace of Memory
+
+The application is not merely a codex. It is a **vast palace of knowledge**, a lived-in castle library and observatory that the owner inhabits.
+
+The atmosphere should evoke:
+
+* Hogwarts Castle's libraries, towers, stone corridors, astronomy tower, and candlelit studies.
+* Oxford and Cambridge college libraries.
+* Trinity College Dublin's Long Room.
+* The Biblioteca Joanina in Coimbra.
+* The Strahov Monastery Library in Prague.
+* Renaissance studioli and cabinets of curiosities.
+* Ancient observatories and alchemical workshops.
+
+### Emotional Tone
+
+The palace is:
+
+* quiet
+* reverent
+* mysterious
+* slightly gloomy
+* candlelit
+* contemplative
+* warm amidst darkness
+
+It should feel like:
+
+> walking through a vast castle library at midnight while rain falls outside and a fire burns somewhere in the distance.
+
+Avoid:
+
+* bright productivity-app aesthetics
+* modern SaaS dashboards
+* excessive gradients
+* gamification
+* "fantasy game UI"
+* theme-park medieval styling
+* cartoon wizard motifs
+
+The mood is **scholarly gothic**, not fantasy cosplay.
+
+---
+
+## Materials
+
+Primary materials:
+
+* dark walnut and aged oak
+* carved stone
+* brass and bronze instruments
+* worn leather
+* vellum and parchment
+* iron and candle soot
+* gold leaf used sparingly
+
+Textures should include:
+
+* paper grain
+* worn leather
+* scratched brass
+* aged stone
+* dark wood
+* dust motes
+* candle glow
+* subtle fog and shadow
+
+Nothing should appear digitally perfect.
+
+---
+
+## Architectural Language
+
+Rooms should feel like actual places inside one coherent palace:
+
+* grand library halls
+* narrow staircases
+* observatory towers
+* hidden studies
+* galleries
+* map rooms
+* cloisters
+* alcoves
+* vaulted ceilings
+
+Each room should have:
+
+* a sense of scale
+* architectural framing
+* shadows
+* depth
+* places where light pools
+
+The user should feel like they are moving through a building rather than switching application tabs.
+
+---
+
+## Lighting
+
+Darkness is the default state.
+
+Light is intentional.
+
+Use:
+
+* candlelight
+* fireplace glow
+* moonlight
+* lanterns
+* illuminated manuscripts
+* star maps
+
+Light should guide attention and create hierarchy.
+
+The screen should feel comfortable at night.
+
+---
+
+# Phase 1 Principle (CRITICAL)
+
+Phase 1 is NOT about building the palace.
+
+Phase 1 is about making the loops work.
+
+The app may be visually simple if necessary.
+
+The following loops are sacred:
+
+1. Capture
+2. Resume Card
+3. Reading Position
+4. Highlight → Why
+5. Re-entry
+
+A plain interface with functioning loops is superior to a beautiful interface with broken loops.
+
+Before adding art, textures, animations, or ornamentation, ensure:
+
+* files persist correctly
+* Obsidian compatibility works
+* re-entry is effortless
+* performance is excellent
+* the system survives neglect
+
+Only after the loops feel indispensable should the palace become ornate.
+
+Beauty is a reward for functionality, never a substitute for it.
+
 Distill these influences into ONE coherent artifact (do not pastiche): da Vinci notebooks & Codex Atlanticus, Vitruvian Man, Renaissance anatomical & celestial engravings, Cellarius star atlases, Tycho Brahe's observatories, illuminated manuscripts & Books of Hours, armillary/celestial globes, cabinets of curiosities, antique scientific instruments, alchemical engravings, antique libraries, classical & temple architecture, museum exhibition design, and Greek/Roman/Hindu mythology.
 
 ### Materials & light (real pigments, not "themes")
