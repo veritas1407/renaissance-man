@@ -27,3 +27,6 @@ CLAUDE.md
 **/CLAUDE.md
 **/*claude*prompt*
 **/*Claude*prompt*
+
+# Exclude Markdown files from repo
+*.md
