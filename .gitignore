@@ -30,3 +30,4 @@ CLAUDE.md
 
 # Exclude Markdown files from repo
 *.md
+!README.md
