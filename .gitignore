@@ -21,3 +21,9 @@ android-keys/
 
 # Generated mobile project artifacts
 src-tauri/gen/android/
+
+# Claude local prompt/context files (never commit)
+CLAUDE.md
+**/CLAUDE.md
+**/*claude*prompt*
+**/*Claude*prompt*
