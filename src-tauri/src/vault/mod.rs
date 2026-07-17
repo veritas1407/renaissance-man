@@ -7,15 +7,21 @@ use walkdir::WalkDir;
 
 use crate::models::VaultFileEntry;
 
-/// The seven canonical subdirectories under the vault root.
+/// The canonical subdirectories under the vault root (see ARCHITECTURE.md §3).
+/// Pursuits = the becoming altitude; Works = the exhibition; Proposals = the
+/// one gate through which AI suggestions may enter (never the human folders).
 pub const VAULT_SUBDIRS: &[&str] = &[
+    "Pursuits",
+    "Threads",
     "Readings",
     "Notes",
     "Goals",
+    "Works",
     "Bucket",
     "Body",
     "Journal",
     "Attachments",
+    "Proposals",
 ];
 
 pub fn ensure_structure(vault: &Path) -> Result<()> {

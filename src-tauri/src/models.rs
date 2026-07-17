@@ -55,3 +55,21 @@ pub struct IndexStats {
     pub notes_indexed: u32,
     pub duration_ms: u64,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConceptNode {
+    pub path: String,
+    pub title: String,
+    pub core: String,
+    pub excerpt: String,
+    pub pos_x: f32,
+    pub pos_y: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConceptEdge {
+    pub path_a: String,
+    pub path_b: String,
+    pub score: f32,
+    pub bridged: bool,
+}

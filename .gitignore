@@ -10,3 +10,14 @@ Thumbs.db
 
 # Node (for future tooling)
 node_modules/
+
+# Secrets / local machine files
+android-keys/
+**/keystore.properties
+**/local.properties
+
+# Crash dumps
+*.stackdump
+
+# Generated mobile project artifacts
+src-tauri/gen/android/

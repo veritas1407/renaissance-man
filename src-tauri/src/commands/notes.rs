@@ -66,12 +66,37 @@ pub async fn create_note(
         return Err(format!("Note already exists: {rel_path}"));
     }
 
+    if let Some(parent) = abs_path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+
     let note = ParsedNote {
         frontmatter: frontmatter_val,
         body,
     };
     frontmatter::write_note_atomic(&abs_path, &note).map_err(|e| e.to_string())?;
     Ok(rel_path)
+}
+
+#[tauri::command]
+pub async fn trash_note(
+    state: State<'_, AppState>,
+    relative_path: String,
+) -> Result<(), String> {
+    let vault = state.vault_path.lock().unwrap().clone().ok_or("No vault open")?;
+    let src = vault.join(&relative_path);
+    if !src.exists() { return Ok(()); }
+    let trash_dir = vault.join(".trash");
+    std::fs::create_dir_all(&trash_dir).map_err(|e| e.to_string())?;
+    let fname = src.file_name().ok_or("invalid path")?.to_string_lossy().into_owned();
+    let dest = trash_dir.join(&fname);
+    let dest = if dest.exists() {
+        let stem = src.file_stem().unwrap_or_default().to_string_lossy().into_owned();
+        let ts = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
+        trash_dir.join(format!("{stem}-{ts}.md"))
+    } else { dest };
+    std::fs::rename(&src, &dest).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

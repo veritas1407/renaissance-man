@@ -1,10 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capabilities for Renaissance Man",
+  "description": "Default capabilities for Renaissance Man (desktop)",
+  "platforms": ["windows", "macOS", "linux"],
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "core:webview:allow-set-webview-zoom",
     "dialog:default",
     "fs:default",
     "shell:default"

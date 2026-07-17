@@ -2,10 +2,19 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, Emitter, Manager, State};
 
-use crate::models::{ResumeCard, VaultFileEntry};
+use crate::models::{ConceptNode, ResumeCard, VaultFileEntry};
 use crate::vault;
 use crate::AppState;
 
+/// Mobile has no folder picker — the vault lives at a fixed spot in app
+/// storage (see lib.rs setup), so this command is never reachable there.
+#[cfg(mobile)]
+#[tauri::command]
+pub async fn pick_vault_folder(_app: AppHandle) -> Result<String, String> {
+    Err("On mobile the vault lives inside app storage".to_string())
+}
+
+#[cfg(desktop)]
 #[tauri::command]
 pub async fn pick_vault_folder(app: AppHandle) -> Result<String, String> {
     use tauri_plugin_dialog::DialogExt;
@@ -213,6 +222,103 @@ pub async fn pick_one_thing(state: State<'_, AppState>) -> Result<Option<ResumeC
     // Sort by score descending, pick the highest
     candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
     Ok(candidates.into_iter().next())
+}
+
+#[tauri::command]
+pub async fn list_notes_for_atlas(
+    state: State<'_, AppState>,
+) -> Result<Vec<ConceptNode>, String> {
+    let vault = state
+        .vault_path
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("No vault open")?;
+
+    let dir = vault.join("Notes");
+    if !dir.exists() {
+        return Ok(vec![]);
+    }
+
+    // Load embedding-based positions (vec[0], vec[1] → semantic x/y in 0..1)
+    let positions: std::collections::HashMap<String, (f32, f32)> = {
+        let db_lock = state.db.lock().unwrap();
+        let mut map = std::collections::HashMap::new();
+        if let Some(conn) = db_lock.as_ref() {
+            if let Ok(mut stmt) = conn.prepare(
+                "SELECT ref_id, vec FROM embeddings \
+                 WHERE kind IN ('note','synthesis') AND ref_id NOT LIKE '%#h%'",
+            ) {
+                let rows = stmt
+                    .query_map([], |r| {
+                        Ok((r.get::<_, String>(0)?, r.get::<_, Vec<u8>>(1)?))
+                    })
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|r| r.ok());
+                for (ref_id, bytes) in rows {
+                    let v = crate::db::embed::bytes_to_vec(&bytes);
+                    if v.len() >= 2 {
+                        map.insert(ref_id, ((v[0] + 1.0) * 0.5, (v[1] + 1.0) * 0.5));
+                    }
+                }
+            }
+        }
+        map
+    };
+
+    let mut nodes = Vec::new();
+    let entries = std::fs::read_dir(&dir).map_err(|e| e.to_string())?;
+    for entry in entries {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+        if !path.extension().map(|e| e == "md").unwrap_or(false) {
+            continue;
+        }
+        let content = std::fs::read_to_string(&path).unwrap_or_default();
+        let note = crate::vault::frontmatter::parse_note(&content).unwrap_or_default();
+        let fm = &note.frontmatter;
+        let title = fm
+            .get("title")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| {
+                path.file_stem()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned()
+            });
+        let core = fm
+            .get("core")
+            .and_then(|v| v.as_str())
+            .or_else(|| fm.get("connection").and_then(|v| v.as_str()))
+            .unwrap_or("")
+            .to_string();
+        let excerpt: String = note.body.trim().chars().take(200).collect();
+        let rel = path
+            .strip_prefix(&vault)
+            .unwrap_or(&path)
+            .to_string_lossy()
+            .replace('\\', "/");
+
+        let (pos_x, pos_y) = positions.get(&rel).copied().unwrap_or_else(|| {
+            // hash fallback for notes not yet embedded
+            let h = rel
+                .bytes()
+                .fold(0u32, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u32));
+            ((h & 0xff) as f32 / 255.0, ((h >> 8) & 0xff) as f32 / 255.0)
+        });
+
+        nodes.push(ConceptNode {
+            path: rel,
+            title,
+            core,
+            excerpt,
+            pos_x,
+            pos_y,
+        });
+    }
+    Ok(nodes)
 }
 
 /// score = warmth_weight × recency_weight

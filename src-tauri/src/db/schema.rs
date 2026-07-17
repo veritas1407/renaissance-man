@@ -1,7 +1,7 @@
 use anyhow::Result;
 use rusqlite::Connection;
 
-pub const CURRENT_VERSION: u32 = 1;
+pub const CURRENT_VERSION: u32 = 2;
 
 pub fn run_migrations(conn: &Connection) -> Result<()> {
     let version: u32 = conn
@@ -10,6 +10,12 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
 
     if version < 1 {
         conn.execute_batch(MIGRATION_1)?;
+    }
+    if version < 2 {
+        conn.execute_batch(MIGRATION_2)?;
+    }
+
+    if version < CURRENT_VERSION {
         conn.execute_batch(&format!("PRAGMA user_version = {CURRENT_VERSION}"))?;
     }
 
@@ -119,4 +125,24 @@ CREATE INDEX IF NOT EXISTS idx_goals_temp ON goals(temp);
 CREATE INDEX IF NOT EXISTS idx_goals_domain ON goals(domain);
 CREATE INDEX IF NOT EXISTS idx_captures_processed ON captures(processed);
 CREATE INDEX IF NOT EXISTS idx_sessions_reading ON sessions(reading_id);
+";
+
+// v2 — the semantic-memory cache: one row per note (and per highlight), holding a
+// MiniLM embedding. Lives ONLY here in the rebuildable .renaissance cache, never in
+// the Markdown. `source_hash` lets us embed once and skip unchanged content forever.
+const MIGRATION_2: &str = "
+CREATE TABLE IF NOT EXISTS embeddings (
+    ref_id      TEXT PRIMARY KEY,
+    vault_path  TEXT NOT NULL,
+    kind        TEXT NOT NULL,
+    title       TEXT,
+    snippet     TEXT,
+    source_hash TEXT NOT NULL,
+    dim         INTEGER NOT NULL,
+    vec         BLOB NOT NULL,
+    model       TEXT NOT NULL,
+    embedded_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_embeddings_kind ON embeddings(kind);
+CREATE INDEX IF NOT EXISTS idx_embeddings_path ON embeddings(vault_path);
 ";
