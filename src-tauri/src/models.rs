@@ -22,6 +22,10 @@ pub struct ResumeCard {
     pub kind: String,
     pub warmth: String,
     pub score: f64,
+    /// How many things were in motion when this one was chosen. The Threshold
+    /// pushes one thing (§4) but offers a quiet re-roll when others also stir.
+    #[serde(default)]
+    pub alternatives: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

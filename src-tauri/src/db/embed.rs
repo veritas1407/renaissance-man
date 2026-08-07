@@ -100,6 +100,117 @@ pub fn bytes_to_vec(b: &[u8]) -> Vec<f32> {
         .collect()
 }
 
+/// Lay a set of embeddings onto the plane of their own greatest variance.
+///
+/// The Atlas used to place a star at raw dimensions 0 and 1 of a 384-dimension
+/// vector. Nothing is wrong with those two numbers except that they are two
+/// arbitrary numbers: two notes about the same subject landed near each other
+/// only by coincidence, so the sky's geometry carried no meaning while the room
+/// claimed that constellations *are* topics. The first two principal components
+/// are the plane in which these particular notes differ most, so distance on the
+/// chart becomes distance in meaning — which is what the Atlas always promised.
+///
+/// Power iteration on XᵀXv, never forming the d×d covariance matrix. No new
+/// dependency, and it runs off stored vectors alone — so mobile, which has no
+/// embedding model, still gets a sky that means something.
+pub fn principal_plane(vectors: &[Vec<f32>]) -> Option<Vec<(f32, f32)>> {
+    let n = vectors.len();
+    if n < 3 {
+        return None; // too few stars to have a shape worth finding
+    }
+    let d = vectors[0].len();
+    if d < 2 || vectors.iter().any(|v| v.len() != d) {
+        return None;
+    }
+
+    // centre the cloud on its own mean
+    let mut mean = vec![0f32; d];
+    for v in vectors {
+        for i in 0..d {
+            mean[i] += v[i];
+        }
+    }
+    for m in mean.iter_mut() {
+        *m /= n as f32;
+    }
+    let x: Vec<Vec<f32>> = vectors
+        .iter()
+        .map(|v| (0..d).map(|i| v[i] - mean[i]).collect())
+        .collect();
+
+    // XᵀXv — the covariance applied to a vector, without the covariance
+    let apply = |x: &[Vec<f32>], v: &[f32]| -> Vec<f32> {
+        let mut out = vec![0f32; v.len()];
+        for row in x {
+            let dot: f32 = row.iter().zip(v).map(|(a, b)| a * b).sum();
+            for i in 0..row.len() {
+                out[i] += dot * row[i];
+            }
+        }
+        out
+    };
+    let normalise = |v: &mut Vec<f32>| -> f32 {
+        let mag = v.iter().map(|a| a * a).sum::<f32>().sqrt();
+        if mag > 1e-12 {
+            for a in v.iter_mut() {
+                *a /= mag;
+            }
+        }
+        mag
+    };
+
+    // a fixed, unrandom start: the same vault must draw the same sky every launch
+    let mut c1: Vec<f32> = (0..d).map(|i| (i % 7) as f32 + 1.0).collect();
+    normalise(&mut c1);
+    for _ in 0..48 {
+        c1 = apply(&x, &c1);
+        if normalise(&mut c1) < 1e-12 {
+            return None;
+        }
+    }
+
+    // the second component, held orthogonal to the first at every step
+    let mut c2: Vec<f32> = (0..d).map(|i| (i % 11) as f32 + 1.0).collect();
+    normalise(&mut c2);
+    for _ in 0..48 {
+        c2 = apply(&x, &c2);
+        let dot: f32 = c2.iter().zip(&c1).map(|(a, b)| a * b).sum();
+        for i in 0..d {
+            c2[i] -= dot * c1[i];
+        }
+        if normalise(&mut c2) < 1e-12 {
+            return None;
+        }
+    }
+
+    let mut pts: Vec<(f32, f32)> = x
+        .iter()
+        .map(|row| {
+            (
+                row.iter().zip(&c1).map(|(p, q)| p * q).sum(),
+                row.iter().zip(&c2).map(|(p, q)| p * q).sum(),
+            )
+        })
+        .collect();
+
+    // into 0..1, with a margin so no star is pinned against the frame
+    let (mut min_x, mut max_x, mut min_y, mut max_y) =
+        (f32::MAX, f32::MIN, f32::MAX, f32::MIN);
+    for (a, b) in &pts {
+        min_x = min_x.min(*a);
+        max_x = max_x.max(*a);
+        min_y = min_y.min(*b);
+        max_y = max_y.max(*b);
+    }
+    let span_x = if max_x - min_x > 1e-6 { max_x - min_x } else { 1.0 };
+    let span_y = if max_y - min_y > 1e-6 { max_y - min_y } else { 1.0 };
+    for p in pts.iter_mut() {
+        p.0 = 0.05 + 0.90 * ((p.0 - min_x) / span_x);
+        p.1 = 0.05 + 0.90 * ((p.1 - min_y) / span_y);
+    }
+    Some(pts)
+}
+
 #[cfg(desktop)]
 fn truncate(s: &str, n: usize) -> String {
     if s.chars().count() <= n {
@@ -442,4 +553,82 @@ pub fn concept_edges(
         }
     }
     Ok(pairs)
+}
+
+#[cfg(test)]
+mod projection_tests {
+    use super::principal_plane;
+
+    /// Three tight clusters in 64 dimensions, deliberately made to differ on
+    /// dimensions the old projection never looked at. The principal plane should
+    /// pull them apart; raw dimensions 0 and 1 should not.
+    fn clustered() -> Vec<Vec<f32>> {
+        let d = 64;
+        let mut out = Vec::new();
+        for (c, axis) in [(0usize, 20usize), (1, 35), (2, 50)] {
+            for k in 0..12 {
+                let mut v = vec![0f32; d];
+                // every cluster agrees on dims 0/1 — the old projection's blind spot
+                v[0] = 0.5;
+                v[1] = -0.25;
+                v[axis] = 1.0 + (k as f32) * 0.01;
+                v[axis + 1] = 0.6 - (k as f32) * 0.01;
+                v[2] = c as f32 * 0.001;
+                out.push(v);
+            }
+        }
+        out
+    }
+
+    fn spread(pts: &[(f32, f32)]) -> f32 {
+        let n = pts.len() as f32;
+        let (mx, my) = pts.iter().fold((0f32, 0f32), |a, p| (a.0 + p.0 / n, a.1 + p.1 / n));
+        pts.iter()
+            .map(|p| ((p.0 - mx).powi(2) + (p.1 - my).powi(2)).sqrt())
+            .sum::<f32>()
+            / n
+    }
+
+    #[test]
+    fn separates_clusters_that_raw_dimensions_hide() {
+        let vecs = clustered();
+        let pts = principal_plane(&vecs).expect("a plane exists");
+        assert_eq!(pts.len(), vecs.len());
+
+        // the old way: raw dims 0 and 1 — identical for every cluster, so no spread
+        let raw: Vec<(f32, f32)> = vecs
+            .iter()
+            .map(|v| ((v[0] + 1.0) * 0.5, (v[1] + 1.0) * 0.5))
+            .collect();
+        assert!(
+            spread(&pts) > spread(&raw) * 10.0,
+            "principal plane spread {} should dwarf raw-dimension spread {}",
+            spread(&pts),
+            spread(&raw)
+        );
+
+        // within-cluster distance must be far smaller than between-cluster
+        let near = (pts[0].0 - pts[5].0).hypot(pts[0].1 - pts[5].1);
+        let far = (pts[0].0 - pts[20].0).hypot(pts[0].1 - pts[20].1);
+        assert!(far > near * 5.0, "clusters not separated: near {near} far {far}");
+
+        // everything lands inside the frame with its margin
+        for (x, y) in &pts {
+            assert!((0.04..=0.96).contains(x) && (0.04..=0.96).contains(y));
+        }
+    }
+
+    #[test]
+    fn is_stable_across_runs() {
+        let vecs = clustered();
+        let a = principal_plane(&vecs).unwrap();
+        let b = principal_plane(&vecs).unwrap();
+        assert_eq!(a, b, "the same vault must draw the same sky");
+    }
+
+    #[test]
+    fn declines_when_there_is_no_shape_to_find() {
+        assert!(principal_plane(&[]).is_none());
+        assert!(principal_plane(&[vec![1.0, 2.0], vec![3.0, 4.0]]).is_none());
+    }
 }

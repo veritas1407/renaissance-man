@@ -99,7 +99,12 @@ pub async fn list_vault_files(
 }
 
 #[tauri::command]
-pub async fn pick_one_thing(state: State<'_, AppState>) -> Result<Option<ResumeCard>, String> {
+/// Push exactly one thing (§4). `skip` walks the ranked list so the Threshold can
+/// offer "something else stirs" without ever becoming a menu; it wraps around.
+pub async fn pick_one_thing(
+    state: State<'_, AppState>,
+    skip: Option<usize>,
+) -> Result<Option<ResumeCard>, String> {
     let vault = state
         .vault_path
         .lock()
@@ -158,6 +163,7 @@ pub async fn pick_one_thing(state: State<'_, AppState>) -> Result<Option<ResumeC
             kind: "reading".to_string(),
             warmth: temp,
             score,
+            alternatives: 0,
         });
     }
 
@@ -216,12 +222,22 @@ pub async fn pick_one_thing(state: State<'_, AppState>) -> Result<Option<ResumeC
             kind: "goal".to_string(),
             warmth: temp,
             score,
+            alternatives: 0,
         });
     }
 
-    // Sort by score descending, pick the highest
+    // Sort by score descending, pick the highest — or the nth, when the owner
+    // asked for something else. Wrapping keeps the re-roll from dead-ending.
     candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
-    Ok(candidates.into_iter().next())
+    let total = candidates.len();
+    if total == 0 {
+        return Ok(None);
+    }
+    let idx = skip.unwrap_or(0) % total;
+    Ok(candidates.into_iter().nth(idx).map(|mut c| {
+        c.alternatives = total;
+        c
+    }))
 }
 
 #[tauri::command]
@@ -240,14 +256,19 @@ pub async fn list_notes_for_atlas(
         return Ok(vec![]);
     }
 
-    // Load embedding-based positions (vec[0], vec[1] → semantic x/y in 0..1)
+    // Where each star stands. The projection is the plane of greatest variance
+    // across these notes (see db::embed::principal_plane), so two notes about
+    // the same thing are drawn near each other — the sky's geometry carries
+    // meaning. A vault too small to have a shape falls back to the old raw
+    // dimensions, which is arbitrary but harmless when there are two or three.
     let positions: std::collections::HashMap<String, (f32, f32)> = {
         let db_lock = state.db.lock().unwrap();
         let mut map = std::collections::HashMap::new();
         if let Some(conn) = db_lock.as_ref() {
             if let Ok(mut stmt) = conn.prepare(
                 "SELECT ref_id, vec FROM embeddings \
-                 WHERE kind IN ('note','synthesis') AND ref_id NOT LIKE '%#h%'",
+                 WHERE kind IN ('note','synthesis') AND ref_id NOT LIKE '%#h%' \
+                 ORDER BY ref_id",
             ) {
                 let rows = stmt
                     .query_map([], |r| {
@@ -256,10 +277,25 @@ pub async fn list_notes_for_atlas(
                     .into_iter()
                     .flatten()
                     .filter_map(|r| r.ok());
+                let mut ids: Vec<String> = Vec::new();
+                let mut vecs: Vec<Vec<f32>> = Vec::new();
                 for (ref_id, bytes) in rows {
                     let v = crate::db::embed::bytes_to_vec(&bytes);
                     if v.len() >= 2 {
-                        map.insert(ref_id, ((v[0] + 1.0) * 0.5, (v[1] + 1.0) * 0.5));
+                        ids.push(ref_id);
+                        vecs.push(v);
+                    }
+                }
+                match crate::db::embed::principal_plane(&vecs) {
+                    Some(pts) => {
+                        for (ref_id, p) in ids.into_iter().zip(pts) {
+                            map.insert(ref_id, p);
+                        }
+                    }
+                    None => {
+                        for (ref_id, v) in ids.into_iter().zip(vecs) {
+                            map.insert(ref_id, ((v[0] + 1.0) * 0.5, (v[1] + 1.0) * 0.5));
+                        }
                     }
                 }
             }
