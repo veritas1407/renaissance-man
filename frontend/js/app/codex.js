@@ -19,6 +19,13 @@
   var curRoom='threshold', roomHist=['threshold'];
   window.RM_roomHist=roomHist;
   var seenRooms={threshold:true}; // threshold is where you wake; it counts as seen
+  // the compact header: the room has been entered before, so drop the ceremony
+  function markAgain(el){
+    if(!el||el.classList.contains('again'))return;
+    el.classList.add('again');
+    // the h1 breaks its line for the grand header; joined for the compact one
+    $$('.plate-head h1 br',el).forEach(function(b){b.replaceWith(' ');});
+  }
   function go(r,viaPop){
     if(!document.getElementById(r))return;
     // direction-aware slide on mobile: leaving right→new enters from right
@@ -27,18 +34,26 @@
     rooms.forEach(function(x){
       var on=(x.id===r);
       x.classList.toggle('active',on);
-      if(on){x.classList.remove('slide-fwd','slide-back');if(dir){void x.offsetWidth;x.classList.add(dir==='fwd'?'slide-fwd':'slide-back');}}
+      if(on){
+        x.classList.remove('slide-fwd','slide-back');
+        if(dir){
+          void x.offsetWidth;
+          x.classList.add(dir==='fwd'?'slide-fwd':'slide-back');
+          // the class must not outlive the slide: a filled transform keeps the
+          // room a containing block for fixed descendants (see the cleanup
+          // block below). animationend covers the normal case; this covers the
+          // ones where it never fires at all — reduced-motion, background tabs.
+          clearTimeout(x.__slideT);
+          x.__slideT=setTimeout(function(){x.classList.remove('slide-fwd','slide-back');},420);
+        }
+      }
     });
     links.forEach(function(l){l.setAttribute('aria-current',l.dataset.room===r?'true':'false');});
+    if(window.RM_moreActive)window.RM_moreActive(r);
     // the room remembers you: full ceremony on first entry, a compact header after
     var el=document.getElementById(r);
-    if(seenRooms[r]){
-      if(!el.classList.contains('again')){
-        el.classList.add('again');
-        // the h1 breaks its line for the grand header; joined for the compact one
-        $$('.plate-head h1 br',el).forEach(function(b){b.replaceWith(' ');});
-      }
-    }else seenRooms[r]=true;
+    if(seenRooms[r])markAgain(el);
+    else seenRooms[r]=true;
     if(backdrop)backdrop.dataset.room=r;
     leaf.scrollTop=0;
     curRoom=r;window.RM_curRoom=r;
@@ -59,6 +74,169 @@
   // deep-link rooms via #hash (e.g. #atlas) — also drives review/testing
   function roomFromHash(){var r=(location.hash||'').replace('#','');if(r&&document.getElementById(r)&&document.getElementById(r).classList.contains('room'))go(r);}
   window.addEventListener('hashchange',roomFromHash);roomFromHash();
+
+  // ---- the gates: wide once a day, narrow every arrival after ----
+  // The Threshold is `active` in the markup, so go() never runs for it at boot
+  // and the compact header only appeared once you had already wandered off —
+  // the most ceremonial screen greeted every cold launch. The First Law says
+  // re-entry is free; it must not cost a scroll past a castle. So the castle
+  // opens wide on the day's first arrival, and stands narrow thereafter.
+  (function(){
+    var th=document.getElementById('threshold');if(!th)return;
+    var d=new Date(),today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    var seen=null;try{seen=localStorage.getItem('rm-gates');}catch(e){}
+    if(seen===today)markAgain(th);
+    else{try{localStorage.setItem('rm-gates',today);}catch(e){}}
+  })();
+
+  // ---- the kept line: one line, until it is asked for ----
+  (function(){
+    var epi=document.getElementById('th-epi');if(!epi)return;
+    function toggle(){
+      var open=epi.classList.toggle('open');
+      epi.setAttribute('aria-expanded',open?'true':'false');
+    }
+    epi.addEventListener('click',toggle);
+    epi.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}
+    });
+  })();
+
+  // ---- the Forge asks for a star, not a project plan ----
+  // Eight-plus fields between the owner and the thing they came to make is a
+  // wall on a phone. The result, the why and the rungs stay; domain, tide,
+  // banner and becoming all have honest defaults, so they wait behind one line.
+  (function(){
+    var t=document.getElementById('fg-more-toggle');
+    var forge=document.querySelector('.forge');
+    if(!t||!forge)return;
+    t.addEventListener('click',function(){
+      var full=forge.classList.toggle('fg-full');
+      t.setAttribute('aria-expanded',full?'true':'false');
+      t.textContent=full?'enough — keep it simple':'chart it fully — domain, tide, banner';
+    });
+    // every opening starts plain; the choice is per-star, not remembered
+    window.RM_forgePlain=function(){
+      forge.classList.remove('fg-full');
+      t.setAttribute('aria-expanded','false');
+      t.textContent='chart it fully — domain, tide, banner';
+    };
+    window.RM_forgeFull=function(){
+      forge.classList.add('fg-full');
+      t.setAttribute('aria-expanded','true');
+      t.textContent='enough — keep it simple';
+    };
+  })();
+
+  // ---- animations must not outlive themselves as containing blocks ----
+  // This is the root of a bug class that has bitten twice (.spine, #search-results).
+  // A filled animation keeps its final *computed* value, and the keyword `none`
+  // does not survive interpolation: `filter:none` fills as `blur(0px)` and
+  // `transform:none` fills as `matrix(1,0,0,1,0,0)`. Both still make the element
+  // a containing block for position:fixed descendants. So `.codex` — the whole
+  // application — and every room ever slid into were quietly redefining what
+  // `fixed` meant for everything inside them, forever. It only looked correct
+  // because .codex happens to be viewport-sized. Strip each animation once it
+  // has played, and `fixed` means the viewport again.
+  (function(){
+    var codex=document.getElementById('codex');
+    if(codex)codex.addEventListener('animationend',function(e){
+      if(e.target===codex&&e.animationName==='open')codex.style.animation='none';
+    });
+    rooms.forEach(function(rm){
+      rm.addEventListener('animationend',function(e){
+        if(e.target!==rm)return;
+        if(e.animationName==='slidefwd'||e.animationName==='slideback')
+          rm.classList.remove('slide-fwd','slide-back');
+      });
+    });
+  })();
+
+  // ---- how much of the screen the keyboard has taken ----
+  // Published as --kb so anything docked to the foot of the page (the [[ ]]
+  // autocomplete) sits above the keyboard rather than beneath it. Some webviews
+  // resize the viewport when the keyboard opens and some overlay it; measuring
+  // visualViewport covers both instead of trusting either.
+  (function(){
+    var vv=window.visualViewport;if(!vv)return;
+    function sync(){
+      var inset=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop));
+      document.documentElement.style.setProperty('--kb',inset+'px');
+    }
+    vv.addEventListener('resize',sync);
+    vv.addEventListener('scroll',sync);
+    sync();
+  })();
+
+  // ---- the further plates: a fifth tab for the weekly rooms ----
+  // Seven equal tabs on a ~360px bar left every one of them cramped and none
+  // comfortably hit. The four daily rooms keep the bar; Life-maxxing, the
+  // Cabinet and the Observatory — visited weekly, not hourly — fold behind one
+  // door. Nothing becomes unreachable: swipe still crosses all seven, and the
+  // command palette still knows every room.
+  (function(){
+    var spine=document.querySelector('.spine'),
+        scrim=document.getElementById('more-scrim');
+    if(!spine||!scrim)return;
+    var btn=document.createElement('button');
+    btn.className='plate-link';
+    btn.id='more-link';
+    btn.setAttribute('aria-haspopup','dialog');
+    btn.innerHTML='<span class="rn">⋯</span><span class="nm">More</span>';
+    function open(){scrim.classList.add('on');}
+    function close(){scrim.classList.remove('on');}
+    btn.addEventListener('click',open);
+    scrim.addEventListener('click',function(e){if(e.target===scrim)close();});
+    var closeBtn=document.getElementById('more-close');
+    if(closeBtn)closeBtn.addEventListener('click',close);
+    $$('[data-goroom]',scrim).forEach(function(b){
+      b.addEventListener('click',function(){close();go(b.getAttribute('data-goroom'));});
+    });
+    // the bar carries the door only while the bar is a bar
+    var mq=window.matchMedia('(max-width:640px)');
+    function place(mobile){
+      if(mobile&&!btn.parentElement)spine.appendChild(btn);
+      else if(!mobile&&btn.parentElement){btn.remove();close();}
+    }
+    place(mq.matches);
+    if(mq.addEventListener)mq.addEventListener('change',function(e){place(e.matches);});
+    else mq.addListener(function(e){place(e.matches);});
+    // a secondary room reached by swipe or palette still lights its own door
+    window.RM_moreActive=function(room){
+      btn.setAttribute('aria-current',
+        ['life','cabinet','observatory'].indexOf(room)>=0?'true':'false');
+    };
+  })();
+
+  // ---- the candles go out when nobody is in the room ----
+  // Seven glows and a drift of motes animate forever; on a phone that is a
+  // background battery draw for a room no one is looking at.
+  (function(){
+    var ambient=[document.getElementById('great-hall'),document.getElementById('motes')]
+      .filter(Boolean);
+    if(!ambient.length)return;
+    document.addEventListener('visibilitychange',function(){
+      var state=document.hidden?'paused':'running';
+      ambient.forEach(function(root){
+        root.style.animationPlayState=state;
+        Array.prototype.forEach.call(root.children,function(c){
+          c.style.animationPlayState=state;
+        });
+      });
+    });
+  })();
+
+  // ---- the card's long lines: three lines on a phone, the rest on a tap ----
+  // The why and the next action are the First Law's own fields; they are never
+  // hidden, only folded, and only when they would push re-enter off the screen.
+  (function(){
+    // the why folds by its own span; the next action folds by its row, so the
+    // "next —" label and the sentence stay on one line together
+    [$('#resume-why'),$('.resume .nx')].forEach(function(el){
+      if(!el)return;
+      el.addEventListener('click',function(){el.classList.toggle('open');});
+    });
+  })();
   $$('[data-goread]').forEach(function(b){b.addEventListener('click',function(){go('reading');});});
   // room tabs: long rooms switch sections instead of scrolling them.
   // The chosen section is remembered for the session, per room.
@@ -710,6 +888,7 @@
     $('#fg-mname').value='';$('#fg-mcur').value='';$('#fg-mtgt').value='';$('#fg-munit').value='';
     $('#fg-htarget').value='';$('#fg-hunit').value='';
     $('#fg-sigil').value='✦';fgSetColor('#a8341f');fgSetKind('mastery');
+    if(window.RM_forgePlain)window.RM_forgePlain();
     // one rung to start — the full apparatus (consume/produce/done/tide) is one ⌄ away,
     // and "add a rung" is right there when the star needs more steps
     fgRoadmap.innerHTML='';fgAddRung();
@@ -726,6 +905,13 @@
     var m=g.metric||{};$('#fg-mname').value=m.name||'';$('#fg-mcur').value=(m.current!=null?m.current:'');$('#fg-mtgt').value=(m.target!=null?m.target:'');$('#fg-munit').value=m.unit||'';
     $('#fg-htarget').value=(g.daily_target!=null?g.daily_target:'');$('#fg-hunit').value=g.daily_unit||'';
     fgRoadmap.innerHTML='';(g.rungs&&g.rungs.length?g.rungs:[null]).forEach(function(r){fgAddRung(r||'');});
+    // re-charting shows everything this star already carries — folding away a
+    // domain or a tide that is actually set would be hiding the owner's own work
+    if(window.RM_forgePlain){
+      window.RM_forgePlain();
+      if(g.becoming||g.deadline||(g.domain&&g.domain!=='a pursuit')||(g.banner&&g.banner!=='#a8341f')||(g.sigil&&g.sigil!=='✦'))
+        window.RM_forgeFull();
+    }
     forgeScrim.classList.add('on');setTimeout(function(){$('#fg-title').focus();},40);
   }
   function closeForge(){forgeScrim.classList.remove('on');}

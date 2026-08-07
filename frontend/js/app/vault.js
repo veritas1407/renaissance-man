@@ -18,7 +18,7 @@ window.Bridge = {
     pick:         ()    => inv('pick_vault_folder'),
     getPath:      ()    => inv('get_vault_path'),
     listFiles:         (sub) => inv('list_vault_files',{subfolder:sub}),
-    pickOneThing:      ()    => inv('pick_one_thing'),
+    pickOneThing:      (skip) => inv('pick_one_thing', { skip: skip || 0 }),
     listNotesForAtlas: ()    => inv('list_notes_for_atlas'),
   },
   notes: {
@@ -85,6 +85,7 @@ window.Bridge = {
     attempted=true;
     var key='rm-welcomed:'+path;
     try{if(localStorage.getItem(key))return;}catch(e){}
+    if(window.RM_onboardVoice)window.RM_onboardVoice();
     show(0);
     scrim.classList.add('on');
     try{localStorage.setItem(key,'1');}catch(e){}
@@ -119,6 +120,9 @@ if (IS_TAURI) {
     loadIntentions();
     loadTasks();
     loadInboxCount();
+    // a share that arrived before the vault opened has been waiting
+    if (window.RM_drainShares) window.RM_drainShares();
+    if (window.RM_showFerryAge) window.RM_showFerryAge();
     loadReadingsList();
     if (window.RM_loadPursuits) window.RM_loadPursuits();
     if (window.RM_loadGoalsFromVault) window.RM_loadGoalsFromVault();
@@ -145,6 +149,10 @@ if (IS_TAURI) {
   if (fi) fi.addEventListener('click', async () => {
     try {
       const n = await inv('import_vault_zip');
+      // this device now knows when it last received the vault (see the freshness
+      // line on the Threshold) — a stale resume card is worse than none
+      try { localStorage.setItem('rm-ferried', String(Date.now())); } catch (e) {}
+      if (window.RM_showFerryAge) window.RM_showFerryAge();
       if (window.flash) window.flash('the vault has come aboard — ' + n + ' page' + (n === 1 ? '' : 's'));
     } catch (e) {
       // a cancelled picker is not an error worth ink
@@ -395,10 +403,15 @@ function salute() {
   return 'A late hour.';
 }
 
+// Which of the ranked candidates the hearth is currently showing. The owner can
+// walk it with "something else stirs" — one push at a time, never a menu (§4).
+let thSkip = 0;
+
 async function loadThresholdCard() {
   try {
-    const card = await window.Bridge.vault.pickOneThing();
+    const card = await window.Bridge.vault.pickOneThing(thSkip);
 
+    const reroll = document.getElementById('th-reroll');
     const tag = document.getElementById('resume-tag');
     const t = document.getElementById('resume-title');
     const m = document.getElementById('resume-meta');
@@ -410,6 +423,10 @@ async function loadThresholdCard() {
     const scribe = document.getElementById('th-scribe');
 
     if (!card) {
+      if (reroll) reroll.hidden = true;
+      // nothing in motion: on a phone that usually means the vault never arrived
+      const ferryDoor = document.getElementById('th-ferry');
+      if (ferryDoor) ferryDoor.hidden = !window.matchMedia('(max-width:640px)').matches;
       if (panel) panel.classList.remove('live');
       if (tag) tag.textContent = '⸻ the desk is clear ⸻';
       if (t) t.textContent = 'Nothing in motion yet';
@@ -421,7 +438,14 @@ async function loadThresholdCard() {
       return;
     }
 
-    if (tag) tag.textContent = '⸻ continue where you were ⸻';
+    // something is in motion, so the vault plainly arrived — the door stands down
+    {
+      const ferryDoor = document.getElementById('th-ferry');
+      if (ferryDoor) ferryDoor.hidden = true;
+    }
+    if (tag) tag.textContent = thSkip > 0 ? '⸻ this also stirs ⸻' : '⸻ continue where you were ⸻';
+    // the re-roll appears only when there is genuinely something else to show
+    if (reroll) reroll.hidden = !(card.alternatives > 1);
     if (whyRow) whyRow.style.display = '';
     if (btn) btn.style.display = '';
     if (t) t.textContent = card.title;
@@ -451,9 +475,11 @@ async function loadThresholdCard() {
           toward = (n && n.frontmatter && n.frontmatter.becoming) || '';
         } catch (e) { /* the plain line still serves */ }
       }
+      // The title now sits directly beneath this line, so the resident no longer
+      // repeats it — it points at the card instead of restating it.
       const base = card.kind === 'goal'
-        ? `One rung waits on ${card.title}. Finish the thought.`
-        : `You left ${card.title} mid-way. I'd begin there — the rest can keep.`;
+        ? `One rung waits here. Finish the thought.`
+        : `You left this mid-way. I'd begin here — the rest can keep.`;
       scribe.textContent = salute() + ' ' + (toward ? `Toward ${toward} — ` : '') + base.charAt(0)[toward ? 'toLowerCase' : 'toUpperCase']() + base.slice(1);
     }
   } catch(e) {
@@ -461,6 +487,99 @@ async function loadThresholdCard() {
   }
 }
 window.loadThresholdCard = loadThresholdCard;
+
+// ---- the onboarding must tell the truth on the device it is running on ----
+// Leaf 0 said "a folder you chose". On a phone nothing was chosen: the vault is
+// created at app_data_dir()/vault with no picker (lib.rs). A first screen that
+// misdescribes where your work lives is a poor trade in an app whose whole claim
+// is that you own the files.
+window.RM_onboardVoice = function () {
+  if (!window.matchMedia('(max-width:640px)').matches) return;
+  const h = document.getElementById('ob0-h');
+  const p = document.getElementById('ob0-p');
+  const b = document.getElementById('ob0-ferry');
+  if (h) h.textContent = 'this is your vault';
+  if (p) {
+    p.textContent = 'Everything you keep here is a plain Markdown file. On this phone '
+      + 'they live in the app’s own storage — nothing is locked in, and the same '
+      + 'pages open in Obsidian once they travel back. If your vault is on a desk '
+      + 'somewhere, bring it across now.';
+  }
+  if (b) b.hidden = false;
+};
+
+// Both ferry doors outside the Observatory lead to the same satchel.
+{
+  const carry = () => { const fi = document.getElementById('ferry-import'); if (fi) fi.click(); };
+  const ob0 = document.getElementById('ob0-ferry');
+  const thf = document.getElementById('th-ferry');
+  if (ob0) ob0.addEventListener('click', carry);
+  if (thf) thf.addEventListener('click', carry);
+}
+
+// ---- how old this device's copy of the vault is ----
+// Only the phone lives off a ferried copy; the desk holds the vault itself. A
+// resume card drawn from a stale snapshot is worse than no card, so the age is
+// stated plainly once it is old enough to matter — never as a reprimand (§4).
+window.RM_showFerryAge = function () {
+  const el = document.getElementById('ferry-age');
+  if (!el) return;
+  let stamp = null;
+  try { stamp = localStorage.getItem('rm-ferried'); } catch (e) {}
+  if (!stamp || !window.matchMedia('(max-width:640px)').matches) { el.hidden = true; return; }
+  const days = Math.floor((Date.now() - Number(stamp)) / 86400000);
+  if (!(days >= 2)) { el.hidden = true; return; }
+  el.textContent = 'this copy came aboard ' + days + ' days ago';
+  el.hidden = false;
+};
+
+// ---- the share door: text handed in from another app (Android ACTION_SEND) ----
+// MainActivity.kt pushes {id,text} onto window.__RM_SHARES and calls this. It can
+// arrive before the vault is open, so a failed save is put back rather than lost —
+// nothing captured is ever dropped (§4, never lost in the moment).
+{
+  const kept = new Set();
+  let draining = false;
+  window.RM_drainShares = async function () {
+    const q = window.__RM_SHARES;
+    if (draining || !q || !q.length) return;
+    draining = true;
+    try {
+      while (q.length) {
+        const item = q[0];
+        if (!item || !item.text || kept.has(item.id)) { q.shift(); continue; }
+        const text = String(item.text).trim();
+        const kind = /^https?:\/\/\S+$/i.test(text) ? 'link' : 'idea';
+        try {
+          await window.Bridge.capture.save(kind, [], text);
+        } catch (e) {
+          // most likely the vault is not open yet — hold it and try again later
+          console.debug('[share] held', e);
+          break;
+        }
+        kept.add(item.id);
+        q.shift();
+        if (window.flash) window.flash('caught from elsewhere · ' + kind);
+        loadInboxCount();
+        loadThresholdCard();
+      }
+    } finally { draining = false; }
+  };
+  // anything that arrived before this script ran
+  if (window.__RM_SHARES && window.__RM_SHARES.length) window.RM_drainShares();
+}
+
+// "something else stirs" — walk the ranked candidates one at a time. The hearth
+// still pushes exactly one thing; this only changes which one (§4, never a menu).
+{
+  const reroll = document.getElementById('th-reroll');
+  if (reroll) {
+    reroll.addEventListener('click', () => {
+      thSkip += 1;
+      loadThresholdCard();
+    });
+  }
+}
 
 // JS mirror of Rust's compute_score in vault.rs — warmth × log-decay over 14 days
 function scoreItem(temp, lastTouched) {
@@ -1610,11 +1729,16 @@ document.addEventListener('keydown', (e) => {
   const mobileFoot = document.createElement('div');
   mobileFoot.id = 'mobile-foot';
   let placed = false;
+  // The ribbon, not <body>: floating the cluster over the top-right corner laid
+  // it across the search field, which is the ribbon's own child. Riding *in* the
+  // ribbon it can never overlap, and it stops being position:fixed entirely —
+  // which also takes it out of the backdrop-filter containing-block hazard.
+  const ribbon = document.querySelector('.ribbon');
   function place(mobile) {
     if (mobile && !placed) {
       mobileFoot.appendChild(pill);
       mobileFoot.appendChild(lamp);
-      document.body.appendChild(mobileFoot);
+      (ribbon || document.body).appendChild(mobileFoot);
       placed = true;
     } else if (!mobile && placed) {
       spineFoot.insertBefore(pill, spineFoot.firstChild);
@@ -1622,6 +1746,59 @@ document.addEventListener('keydown', (e) => {
       mobileFoot.remove();
       placed = false;
     }
+  }
+  const mq = window.matchMedia('(max-width:640px)');
+  place(mq.matches);
+  if (mq.addEventListener) mq.addEventListener('change', (e) => place(e.matches));
+  else mq.addListener((e) => place(e.matches));
+})();
+
+// ---- Mobile: portal the search panel out of .ribbon ----
+// The same trap as .spine above: .ribbon carries backdrop-filter, so it is the
+// containing block for any position:fixed descendant — and #search-results
+// switches to position:fixed on phones. Today it only *looks* right because
+// .ribbon happens to sit at the viewport top; any change to the ribbon's offset,
+// stickiness, or safe-area padding would silently misplace the panel. Move it to
+// <body> on phones (listeners survive appendChild) and give it back on desktop,
+// where it is position:absolute inside .search-mini and belongs there.
+(function () {
+  const panel = document.getElementById('search-results');
+  if (!panel) return;
+  const home = panel.parentElement;
+  if (!home) return;
+  let portaled = false;
+  function place(mobile) {
+    if (mobile && !portaled) {
+      document.body.appendChild(panel);
+      portaled = true;
+    } else if (!mobile && portaled) {
+      home.appendChild(panel);
+      portaled = false;
+    }
+  }
+  const mq = window.matchMedia('(max-width:640px)');
+  place(mq.matches);
+  if (mq.addEventListener) mq.addEventListener('change', (e) => place(e.matches));
+  else mq.addListener((e) => place(e.matches));
+})();
+
+// ---- Mobile: portal the [[ ]] autocomplete out of the room ----
+// `.room` carries `will-change:transform` (index.html) for the page-turn, which
+// makes every room a containing block for position:fixed descendants —
+// permanently, animation or not. The autocomplete docks to the foot of the
+// visible viewport on phones, so it has to live outside the room to mean it.
+// Its own code only ever touches the element directly (no closest/parent walks),
+// so moving it is safe; on the desk it goes home, where it is absolutely
+// positioned against the editor and belongs.
+(function () {
+  const ac = document.getElementById('wiki-ac');
+  if (!ac) return;
+  const home = ac.parentElement;
+  if (!home) return;
+  let portaled = false;
+  function place(mobile) {
+    if (mobile && !portaled) { document.body.appendChild(ac); portaled = true; }
+    else if (!mobile && portaled) { home.appendChild(ac); portaled = false; }
   }
   const mq = window.matchMedia('(max-width:640px)');
   place(mq.matches);
@@ -2956,7 +3133,11 @@ function skipBridge() {
     });
 
     document.addEventListener('click', e => {
-      if (!e.target.closest('.search-mini')) close();
+      // On phones the panel is portaled onto <body> (out of .ribbon's
+      // backdrop-filter containing block), so it is no longer inside
+      // .search-mini — test the panel itself too, or the first tap on a
+      // result would close the panel before the result could be opened.
+      if (!e.target.closest('.search-mini') && !e.target.closest('#search-results')) close();
     });
     input.addEventListener('keydown', e => {
       if (e.key === 'Escape') { close(); input.value = ''; }

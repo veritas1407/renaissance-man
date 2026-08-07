@@ -1387,11 +1387,15 @@
          relocated to #mobile-foot (see JS) since .spine's backdrop-filter makes
          it a containing block for position:fixed descendants, trapping them
          near the bottom plate-bar instead of the viewport's top edge — */
-    #mobile-foot{display:flex;position:fixed;top:calc(env(safe-area-inset-top) + 8px);right:10px;
-      flex-direction:row;align-items:center;gap:2px;padding:2px 6px;
-      background:rgba(10,7,4,.78);border:1px solid var(--rule-2);border-radius:22px;z-index:24;
-      backdrop-filter:blur(6px);width:auto}
-    html[data-theme="light"] #mobile-foot{background:rgba(238,226,196,.92)}
+    /* rides inside the ribbon as a flex child — never across the search field */
+    #mobile-foot{display:flex;flex:0 0 auto;flex-direction:row;align-items:center;gap:2px;
+      padding:0;background:none;border:0;width:auto}
+    /* the label is desk furniture; the phone needs the millimetres. The
+       intentions take only what they hold, so an empty day gives the whole
+       ribbon to the search rather than to a blank half. */
+    .ribbon .intents .lab{display:none}
+    .ribbon .intents{flex:0 1 auto}
+    .ribbon{padding:8px 12px;gap:8px}
     #mobile-foot .inbox-pill{gap:5px;font-size:10.5px;min-height:44px;padding:0 8px}
     #mobile-foot .lamp{width:44px;height:44px;min-height:44px;margin-top:0;padding:0;border:0;justify-content:center;gap:0;border-radius:50%}
     #mobile-foot .lamp-txt{display:none}
@@ -1421,7 +1425,9 @@
     #capquill{display:none}
     .search-mini{padding:6px 9px;flex:1;min-width:0}
     .search-mini input{width:100%;min-width:0;font-size:16px}
-    #search-results{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:55vh}
+    /* portaled onto <body> by JS, so these offsets are honestly viewport-relative */
+    #search-results{position:fixed;left:10px;right:10px;width:auto;max-height:55vh;
+      top:calc(58px + env(safe-area-inset-top));z-index:26}
     /* — the quill-seal: capture is the one great mobile gesture — */
     .quill-fab{display:grid;place-items:center;position:fixed;right:16px;
       bottom:74px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:23;
@@ -1438,10 +1444,17 @@
       padding-bottom:calc(24px + env(safe-area-inset-bottom))!important;
       animation:sheetup .32s var(--ease-v) both}
     /* — an honest hand needs honest targets, and a press that answers — */
-    .btn,.tbtn,.kind,.lamp,.sfchip,.chip,.rt-btn,.ne-del,.ne-preview{min-height:44px}
-    .swatch{width:32px;height:32px}
-    .task-cb{width:20px;height:20px;min-width:20px}
+    /* .wiki-ac-item joins the honest-target rule: it is the control you tap
+       while typing fast, on a screen the keyboard has already halved */
+    .btn,.tbtn,.kind,.lamp,.sfchip,.chip,.rt-btn,.ne-del,.ne-preview,.wiki-ac-item{min-height:44px}
+    .wiki-ac-item{display:flex;align-items:center}
+    /* the swatches already wrap, so an honest target costs only a row */
+    .swatch{width:44px;height:44px}
+    /* the box stays a box; the reach around it becomes a thumb's worth */
+    .task-cb{width:20px;height:20px;min-width:20px;padding:12px;background-clip:content-box;
+      box-sizing:content-box;margin:-12px}
     .task-item{padding:9px 0}
+    .task-lbl{padding-left:12px}
     .btn:active,.tbtn:active,.kind:active,.sfchip:active,.note-card:active,.plate-link:active{transform:scale(.97)}
     .plate-link{transition:transform .1s var(--ease-v),color .25s var(--ease)}
     input,textarea,select,.slip textarea{font-size:16px}
@@ -1456,7 +1469,10 @@
     /* the sheet follows the thumb while being flung down */
     .scrim>*{transition:transform .18s var(--ease-v)}
     .scrim.dragging>*{transition:none}
-    /* — seven plates in the hand: numerals lead, names ride beneath, legible — */
+    /* — four daily plates in the hand, not seven: each tab gets half again the
+         width, so the numeral leads and the name is actually readable. The
+         weekly rooms live behind "more" (and swipe still crosses all seven). — */
+    .spine .plate-link[data-secondary]{display:none}
     .plate-link{padding:6px 0}
     .plate-link .rn{font-size:14px}
     .plate-link .nm{font-size:10.5px;letter-spacing:0;white-space:normal;line-height:1.05;text-align:center;overflow-wrap:anywhere}
@@ -1591,6 +1607,115 @@
   .castle-sky .cwins rect:nth-child(4n){animation-duration:7s}
   @keyframes win-breathe{0%,100%{opacity:.5}50%{opacity:1}}
   #threshold.room.again .plate-head{min-height:120px;padding-bottom:14px}
+
+  /* ==================================================================
+     THE HEARTH PASS (v0.1.25) — ceremony earns its place, once a day.
+     The First Law says re-entry must be free; it was costing a scroll
+     past a castle. The gates open wide on the day's first arrival and
+     stand narrow every time after, the resident speaks from inside the
+     card instead of above it, and the kept line rides on one line until
+     it is asked for. Nothing is deleted — it is ordered.
+     ================================================================== */
+
+  /* — the gates, narrow: every arrival after the day's first — */
+  #threshold.room.again .plate-head{min-height:104px;padding-bottom:12px}
+  #threshold.room.again .castle-sky{opacity:.7}
+  #threshold.room.again .plate-title h1{font-size:24px}
+
+  /* — the resident, now speaking from inside the card — */
+  .scribe.in-card{margin:10px 0 14px;padding-left:0;gap:11px;align-items:flex-start}
+  .scribe.in-card .seal{flex:0 0 24px;width:24px;height:24px;margin-top:2px;border-width:1px}
+  .scribe.in-card .seal svg{width:12px;height:12px}
+  .scribe.in-card p{font-size:16.5px;line-height:1.45;color:var(--ink-2);max-width:52ch}
+
+  /* — the kept line: one line, until you ask for the whole passage — */
+  .epigraph{cursor:pointer;transition:color .2s var(--ease)}
+  .epigraph:hover{color:var(--ink)}
+  .epigraph:focus-visible{outline:1px solid var(--gold-deep);outline-offset:3px}
+  /* the fold is a phone economy — the desk has room for the whole passage */
+
+  /* — the Forge, unfolded only as far as it is needed (phones only: the desk
+       has room for the whole apparatus at once) — */
+  .fg-more-toggle{display:none}
+  @media (max-width:640px){
+    .fg-more-toggle{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;
+      background:none;border:0;cursor:pointer;padding:0;margin:2px 0 14px;
+      font-family:var(--sc);font-size:11.5px;letter-spacing:.16em;color:var(--ink-3)}
+    .fg-more-toggle::before,.fg-more-toggle::after{content:"";height:1px;background:var(--rule);flex:1}
+    .forge:not(.fg-full) [data-fg-more]{display:none}
+  }
+
+  /* — the further plates: the weekly rooms, one tap from the plate-bar — */
+  .more-room{display:grid;grid-template-columns:26px 1fr;grid-template-rows:auto auto;
+    gap:1px 12px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--rule);
+    padding:13px 4px;cursor:pointer;color:var(--ink);min-height:56px;align-items:center}
+  .more-room:last-of-type{border-bottom:0}
+  .more-room .rn{grid-row:1/3;font-family:var(--disp);font-size:17px;color:var(--gold-deep);text-align:center}
+  .more-room .nm{font-family:var(--disp);font-size:19px}
+  .more-room .gl{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--ink-3)}
+  .more-room:hover{color:var(--gold-hi)}
+  .more-room:active{transform:scale(.99)}
+
+  /* — the ferry door, standing on the Threshold while the desk is clear — */
+  .th-ferry{display:flex;width:100%;justify-content:center;margin:0 0 10px}
+
+  /* — the age of this device's copy: a fact, offered quietly — */
+  .ferry-age{font-family:var(--sc);font-size:11.5px;letter-spacing:.14em;color:var(--ink-3);
+    text-align:center;margin:2px 0 10px;opacity:.75}
+
+  /* — the re-roll: one thing is pushed, but never a locked door — */
+  .th-reroll{display:block;margin:12px auto 0;opacity:.62;transition:opacity .2s var(--ease)}
+  .th-reroll:hover{opacity:1}
+
+  @media (max-width:640px){
+    /* the gates on a phone: the ID rule above outranks the mobile .plate-head
+       shrink, so the Threshold never received it — it is given back here */
+    #threshold .plate-head{min-height:170px;padding-bottom:18px}
+    #threshold.room.again .plate-head{min-height:88px;padding:10px 14px;padding-bottom:10px}
+    #threshold.room.again .plate-title h1{font-size:21px}
+    #threshold.room.again .initial{flex:0 0 38px;width:38px;height:38px}
+    #threshold.room.again .initial span{font-size:23px}
+    .epigraph{font-size:15px;padding:10px 0;margin:0 0 16px}
+    .epigraph::before,.epigraph::after{display:none}
+    /* — [[ ]] autocomplete: docked to the foot of the visible viewport, which
+         on a phone is the strip directly above the keyboard. It was anchored to
+         the top of the editor wrapper — a textarea gives no caret coordinates —
+         so on a long note the suggestions appeared far from the words being
+         typed, with the keyboard covering the space between. Docking is honest:
+         it is always in the same place, always within thumb reach. — */
+    .wiki-ac{position:fixed;left:0;right:0;bottom:var(--kb,0px);margin:0;min-width:0;max-width:none;
+      border-radius:12px 12px 0 0;border-left:0;border-right:0;border-bottom:0;
+      max-height:44vh;overflow-y:auto;z-index:40;
+      padding-bottom:env(safe-area-inset-bottom);
+      box-shadow:0 -14px 34px -12px rgba(0,0,0,.6)}
+    .wiki-ac-item{font-size:16px;padding:0 16px}
+    .wiki-ac-empty{padding:14px 16px}
+
+    /* the kept line rides on one line until it is asked for */
+    .epigraph #th-epi-q{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;
+      overflow:hidden;text-overflow:ellipsis}
+    .epigraph .src{max-height:0;opacity:0;margin-top:0;overflow:hidden;
+      transition:max-height .3s var(--ease),opacity .25s var(--ease),margin-top .3s var(--ease)}
+    .epigraph.open #th-epi-q{-webkit-line-clamp:unset;display:block}
+    .epigraph.open .src{max-height:60px;opacity:1;margin-top:6px}
+    .scribe.in-card p{font-size:16px}
+    .scribe.in-card{margin:8px 0 12px}
+    .gold-rule{margin:14px 0}
+    /* the kept line and the card must both clear the fold: hold the
+       gold rule's air and the card's padding honest on a small screen */
+    #threshold .panel.lit.resume{padding:16px 15px}
+    .th-reroll{min-height:44px;display:flex;align-items:center;justify-content:center;margin-top:6px}
+    /* the why and the next action are meant to be one sentence each; three
+       lines holds any honest one. A longer one opens on a tap rather than
+       pushing the re-enter button off the screen — the card must stay whole. */
+    #threshold .resume .why span,#threshold .resume .nx{
+      display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    #threshold .resume .why span.open{-webkit-line-clamp:unset;display:inline}
+    #threshold .resume .nx.open{-webkit-line-clamp:unset;display:block}
+    #threshold .resume .why{padding:10px 13px;margin-bottom:12px;font-size:16.5px}
+    #threshold .resume .next{gap:10px}
+    #threshold #resume-title{font-size:24px;margin:6px 0 2px}
+  }
 </style>
 </head>
 <body>
@@ -1613,9 +1738,12 @@
     <button class="plate-link" data-room="threshold" aria-current="true"><span class="rn">I</span><span class="nm">Threshold</span></button>
     <button class="plate-link" data-room="reading"><span class="rn">II</span><span class="nm">Reading room</span></button>
     <button class="plate-link" data-room="atlas"><span class="rn">III</span><span class="nm">Atlas</span></button>
-    <button class="plate-link" data-room="life"><span class="rn">IV</span><span class="nm">Life-maxxing</span></button>
-    <button class="plate-link" data-room="cabinet"><span class="rn">V</span><span class="nm">Cabinet</span></button>
-    <button class="plate-link" data-room="observatory"><span class="rn">VI</span><span class="nm">Observatory</span></button>
+    <!-- data-secondary: still full plates on the desk, but folded behind "more"
+         on a phone, where seven equal tabs meant none of them was reachable.
+         These three are the weekly rooms; the other four are the daily ones. -->
+    <button class="plate-link" data-room="life" data-secondary><span class="rn">IV</span><span class="nm">Life-maxxing</span></button>
+    <button class="plate-link" data-room="cabinet" data-secondary><span class="rn">V</span><span class="nm">Cabinet</span></button>
+    <button class="plate-link" data-room="observatory" data-secondary><span class="rn">VI</span><span class="nm">Observatory</span></button>
     <button class="plate-link" data-room="study"><span class="rn">VII</span><span class="nm">The study</span></button>
 
     <div class="spine-foot">
@@ -1677,16 +1805,17 @@
       </div>
       <hr class="gold-rule">
 
-      <div class="epigraph"><span id="th-epi-q">”Knowledge, once genuinely won, refuses to stay where you put it.”</span><span class="src" id="th-epi-src">— kept from Deutsch</span></div>
-
-      <div class="scribe">
-        <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4l4 4-9 9-4 1 1-4z"/></svg></span>
-        <p id="th-scribe">You left Deutsch mid-argument. I'd begin there — the rest of the world can keep till morning.</p>
-      </div>
+      <!-- the kept line rides as one line until asked; the whole passage on a tap -->
+      <div class="epigraph" id="th-epi" role="button" tabindex="0" aria-expanded="false" title="the whole passage"><span id="th-epi-q">”Knowledge, once genuinely won, refuses to stay where you put it.”</span><span class="src" id="th-epi-src">— kept from Deutsch</span></div>
 
       <div class="panel lit resume" style="margin-bottom:8px">
         <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
         <span class="tag" id="resume-tag">⸻ continue where you were ⸻</span>
+        <!-- the resident speaks about the object, not above it (§ the hearth) -->
+        <div class="scribe in-card">
+          <span class="seal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4l4 4-9 9-4 1 1-4z"/></svg></span>
+          <p id="th-scribe">You left this mid-argument. I'd begin here — the rest of the world can keep till morning.</p>
+        </div>
         <div class="t" id="resume-title">The Beginning of Infinity</div>
         <div class="meta" id="resume-meta">David Deutsch · chapter III · folio 62 · opened yesterday</div>
         <div class="why"><b>why it mattered to you</b><span id="resume-why">That <i>explanations</i>, not predictions, are the real unit of knowledge.</span></div>
@@ -1694,7 +1823,14 @@
           <div class="nx"><i>next —</i> <span id="resume-next">re-state his “reach” argument in four sentences, the book closed.</span></div>
           <button class="btn" id="resume-reenter" data-goread><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 4 20 12 6 20"/></svg> re-enter</button>
         </div>
+        <!-- one thing is pushed, never a menu — but the push can be re-rolled (§4) -->
+        <button class="link-btn th-reroll" id="th-reroll" hidden>something else stirs</button>
       </div>
+
+      <!-- On a phone the ferry is the only road to real notes, and it lived six
+           plates away in the Observatory — so an empty vault read as an empty
+           app. While the desk is clear, the door stands here instead. -->
+      <button class="btn gold th-ferry" id="th-ferry" hidden>bring your vault from the desktop</button>
 
       <!-- The Thread: the living inquiry — burning, sealing, or rekindling (Phase E) -->
       <div class="panel thread-card" id="thread-card" hidden style="margin:0 0 8px">
@@ -1790,6 +1926,9 @@
         </div>
       </div>
 
+      <!-- how old this device's copy is. Stated, never scolded (§4 no shame). -->
+      <div class="ferry-age" id="ferry-age" hidden></div>
+
       <!-- one thing first: everything below waits behind this line (§2 First Law, §4 one-thing) -->
       <button class="th-stir" id="th-stir" aria-expanded="false" aria-controls="th-rest">
         <span id="th-stir-txt">three other things stir — look when you're ready</span>
@@ -1824,14 +1963,15 @@
           <button id="th-rabbit-btn" class="btn gold" data-goread><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg> send to reading room</button>
         </div>
       </div>
-      </div><!-- /#th-rest -->
-      <!-- the counsel before action: Krishna drives Arjuna between the armies -->
+      <!-- the counsel before action: Krishna drives Arjuna between the armies.
+           It waits behind the fold: the hearth owes you the one thing first. -->
       <figure class="plate-art" style="aspect-ratio:16/7;margin:26px 0 0">
-        <img src="assets/art/partha-sarathi.jpg" alt="Partha Sarathi — Krishna drives Arjuna's chariot" style="object-position:center 45%">
+        <img src="assets/art/partha-sarathi.jpg" loading="lazy" alt="Partha Sarathi — Krishna drives Arjuna's chariot" style="object-position:center 45%">
         <span class="frame"></span>
         <figcaption>G. Tomassetti · Partha Sarathi · the Mahabharata cycle — <em>the work itself is yours; the fruits were never promised</em></figcaption>
       </figure>
       <p class="closed">❧ The feed is closed for today. Nothing else needs you. ❧</p>
+      </div><!-- /#th-rest -->
     </section>
 
     <!-- II · READING ROOM -->
@@ -2552,12 +2692,6 @@
       <button type="button" class="ktab" data-kind="habit" aria-pressed="false">a daily habit · built by streak</button>
     </div>
 
-    <div class="field">
-      <label>The becoming — who does this make you?</label>
-      <input type="text" id="fg-becoming" placeholder="e.g. a person who understands physics from first principles" autocomplete="off">
-      <div class="hint">Goals end; becomings compound. Optional — but this line outlives the deadline.</div>
-    </div>
-
     <div class="field" id="fg-pursuit-field" style="display:none">
       <label>In service of which becoming?</label>
       <select id="fg-pursuit"><option value="">— its own pursuit —</option></select>
@@ -2574,7 +2708,18 @@
       <div class="hint">This is what the system resurfaces when the thread goes cold. Make it honest.</div>
     </div>
 
-    <div class="two">
+    <!-- A star needs a result, a why, and its rungs. Everything else has an
+         honest default, so on a phone it waits behind one line rather than
+         standing between you and the thing you came to make. -->
+    <button type="button" class="fg-more-toggle" id="fg-more-toggle" aria-expanded="false">chart it fully — domain, tide, banner</button>
+
+    <div class="field" data-fg-more>
+      <label>The becoming — who does this make you?</label>
+      <input type="text" id="fg-becoming" placeholder="e.g. a person who understands physics from first principles" autocomplete="off">
+      <div class="hint">Goals end; becomings compound. Optional — but this line outlives the deadline.</div>
+    </div>
+
+    <div class="two" data-fg-more>
       <div class="field">
         <label>Domain</label>
         <input type="text" id="fg-domain" placeholder="physics · letters · body…" autocomplete="off">
@@ -2605,7 +2750,7 @@
       <div class="hint">Move it in the Body room or here — the star brightens as the number climbs.</div>
     </div>
 
-    <div class="field">
+    <div class="field" data-fg-more>
       <label>Its banner — colour &amp; sigil</label>
       <div class="swatches" id="fg-swatches">
         <button class="swatch" data-color="#a8341f" style="background:#a8341f" aria-pressed="true" title="vermilion"></button>
@@ -2631,13 +2776,27 @@
   </div>
 </div>
 
+<!-- the further plates — the weekly rooms, one tap from the phone's plate-bar -->
+<div class="scrim" id="more-scrim">
+  <div class="slip more-slip">
+    <div class="mini-h">the further plates</div>
+    <button class="more-room" data-goroom="life"><span class="rn">IV</span><span class="nm">Life-maxxing</span><span class="gl">the body, and mastery earned by labour</span></button>
+    <button class="more-room" data-goroom="cabinet"><span class="rn">V</span><span class="nm">Cabinet</span><span class="gl">the wishbook — never a backlog</span></button>
+    <button class="more-room" data-goroom="observatory"><span class="rn">VI</span><span class="nm">Observatory</span><span class="gl">the week, looked back upon</span></button>
+    <div class="row"><button class="btn ghost" id="more-close">not now</button></div>
+  </div>
+</div>
+
 <!-- first-run onboarding — four vellum leaves, shown once per vault, skippable -->
 <div class="scrim" id="onboard-scrim">
   <div class="slip onboard-slip">
     <div class="onboard-leaves" id="onboard-leaves">
+      <!-- the copy tells the truth per platform: the desk chose its folder,
+           the phone was given one. Swapped in JS (RM_onboardVoice). -->
       <div class="onboard-leaf on" data-leaf="0">
-        <div class="mini-h">this is your folder</div>
-        <p>Everything you keep here is a plain Markdown file, sitting in a folder you chose. Nothing is ever locked in — open the same vault in Obsidian any time you like.</p>
+        <div class="mini-h" id="ob0-h">this is your folder</div>
+        <p id="ob0-p">Everything you keep here is a plain Markdown file, sitting in a folder you chose. Nothing is ever locked in — open the same vault in Obsidian any time you like.</p>
+        <button class="btn" id="ob0-ferry" hidden style="margin-top:14px">bring my vault across</button>
       </div>
       <div class="onboard-leaf" data-leaf="1">
         <div class="mini-h">the quill catches anything</div>
