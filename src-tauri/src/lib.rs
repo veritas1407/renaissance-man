@@ -1,4 +1,4 @@
-// frontend embed refresh: v0.1.24
+// frontend embed refresh: v0.1.27
 pub mod commands;
 pub mod db;
 pub mod models;

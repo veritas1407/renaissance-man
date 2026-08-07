@@ -1,6 +1,6 @@
 {
   "productName": "Renaissance Man",
-  "version": "0.1.24",
+  "version": "0.1.27",
   "identifier": "com.renaissanceman.app",
   "build": {
     "frontendDist": "../frontend"

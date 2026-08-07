@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "cargo tauri dev",
-    "build": "cargo tauri build"
+    "build": "cargo tauri build",
+    "ship:android": "bash scripts/ship-android.sh",
+    "serve:apk": "bash scripts/ship-android.sh --serve"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
