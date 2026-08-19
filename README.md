@@ -11,7 +11,7 @@
   <img alt="Language" src="https://img.shields.io/badge/core-Rust-b45309?style=for-the-badge" />
   <img alt="Storage" src="https://img.shields.io/badge/storage-Markdown%20%2B%20SQLite-14532d?style=for-the-badge" />
   <img alt="Search" src="https://img.shields.io/badge/search-FTS5%20%2B%20semantic-1e3a8a?style=for-the-badge" />
-  <img alt="License" src="https://img.shields.io/badge/license-private-7f1d1d?style=for-the-badge" />
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-14532d?style=for-the-badge" />
 </p>
 
 ---
@@ -158,11 +158,6 @@ Renaissance-Man/
       commands/
       db/
       vault/
-  PRODUCT.md
-  VISION.md
-  ARCHITECTURE.md
-  DESIGN_SYSTEM.md
-  ROADMAP.md
 ```
 
 ---
@@ -258,16 +253,6 @@ This preserves learning by articulation instead of outsourcing thought.
 
 ---
 
-## Docs You Should Read Next
-
-- [VISION.md](VISION.md) - canonical intent and first principles
-- [PRODUCT.md](PRODUCT.md) - product shape and user journeys
-- [ARCHITECTURE.md](ARCHITECTURE.md) - technical decisions and constraints
-- [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) - visual language and interaction laws
-- [ROADMAP.md](ROADMAP.md) - sequencing and direction
-
----
-
 ## Development Notes
 
 - Frontend intentionally avoids heavy frameworks and build pipelines
@@ -295,3 +280,9 @@ If you are exploring the code, start from:
 
 Renaissance Man is designed to be quiet software that survives your absences,
 remembers your reasons, and helps scattered interests become one continuous craft.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
