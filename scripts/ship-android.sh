@@ -26,7 +26,21 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 FORCE_SERVE=0
-for arg in "$@"; do [ "$arg" = "--serve" ] && FORCE_SERVE=1; done
+NO_BUILD=0
+for arg in "$@"; do
+  [ "$arg" = "--serve" ] && FORCE_SERVE=1
+  [ "$arg" = "--no-build" ] && NO_BUILD=1
+done
+
+APK="src-tauri/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release.apk"
+
+# Sources newer than $1 — the same question the freshness guard asks after a
+# build, asked here beforehand to decide whether a build is needed at all.
+sources_newer_than() {
+  find frontend src-tauri/src src-tauri/Cargo.toml -type f \
+    \( -name '*.rs' -o -name '*.js' -o -name '*.html' -o -name '*.css' -o -name '*.toml' \) \
+    -newer "$1" -print -quit 2>/dev/null || true
+}
 
 say()  { printf '\n\033[1m%s\033[0m\n' "$*"; }
 warn() { printf '\033[33m%s\033[0m\n' "$*"; }
@@ -36,19 +50,29 @@ VERSION=$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' src-tauri/tauri.co
 [ -n "$VERSION" ] || die "could not read version from src-tauri/tauri.conf.json"
 say "Renaissance Man $VERSION → Android"
 
-# The frontend is embedded into the .so, and Cargo only notices a changed crate.
-# Touching lib.rs guarantees the webview assets that ship are the ones on disk.
-say "· refreshing the embedded frontend"
-sed -i "s|// frontend embed refresh: v.*|// frontend embed refresh: v$VERSION|" src-tauri/src/lib.rs
+# A full build is four minutes; handing over an APK that is already current
+# should be instant. Rebuild only when there is a reason to.
+if [ "$NO_BUILD" -eq 1 ]; then
+  [ -f "$APK" ] || die "--no-build was asked for, but no APK exists yet at $APK"
+  say "· skipping the build (--no-build)"
+elif [ -f "$APK" ] && [ -z "$(sources_newer_than "$APK")" ]; then
+  say "· the existing APK is already newer than every source file — not rebuilding"
+  echo "  (pass --no-build to insist, or touch a file to force a rebuild)"
+else
+  # The frontend is embedded into the .so, and Cargo only notices a changed
+  # crate. Touching lib.rs guarantees the webview assets that ship are the ones
+  # on disk.
+  say "· refreshing the embedded frontend"
+  sed -i "s|// frontend embed refresh: v.*|// frontend embed refresh: v$VERSION|" src-tauri/src/lib.rs
 
-say "· compiling (the symlink error at the end is expected)"
-cargo tauri android build --apk --target aarch64 2>&1 | tail -3 || true
+  say "· compiling (the symlink error at the end is expected)"
+  cargo tauri android build --apk --target aarch64 2>&1 | tail -3 || true
 
-say "· packaging"
-( cd src-tauri/gen/android && ./gradlew --quiet assembleArm64Release )
+  say "· packaging"
+  ( cd src-tauri/gen/android && ./gradlew --quiet assembleArm64Release )
+fi
 
-APK="src-tauri/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release.apk"
-[ -f "$APK" ] || die "gradle reported success but produced no APK at $APK"
+[ -f "$APK" ] || die "no APK at $APK — the build produced nothing"
 
 # Step one can fail in more ways than the expected symlink error, and Gradle will
 # cheerfully package whatever .so is already sitting in jniLibs. That would ship
@@ -57,9 +81,7 @@ APK="src-tauri/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release
 say "· checking the build is actually fresh"
 SO="src-tauri/gen/android/app/src/main/jniLibs/arm64-v8a/librenaissance_man_lib.so"
 [ -f "$SO" ] || die "no native library at $SO — the compile step never produced one"
-NEWEST_SRC=$(find frontend src-tauri/src src-tauri/Cargo.toml -type f \
-  \( -name '*.rs' -o -name '*.js' -o -name '*.html' -o -name '*.css' -o -name '*.toml' \) \
-  -newer "$SO" -print -quit 2>/dev/null || true)
+NEWEST_SRC=$(sources_newer_than "$SO")
 if [ -n "$NEWEST_SRC" ]; then
   warn "  $NEWEST_SRC is newer than the compiled library."
   die  "  The compile step did not pick up your latest changes, so this APK would
